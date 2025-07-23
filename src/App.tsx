@@ -1,25 +1,114 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+} from "react-router-dom";
+import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import "./App.css";
+import { ConfirmationPage } from "./components/ConfirmationPage";
+import LoginPage from "./pages/apply";
+import StatementReview from "./components/StatementReview";
+import LoanApplicationPage from "./pages/loanApplication";
+import PersonalDetails from "./pages/personalDetails";
 
-function App() {
+// Wrapper component to use hooks
+const AppContent = () => {
+  const navigate = useNavigate();
+
+  const handleLogin = (email: string, bvn: string, dob: string) => {
+    // In a real app, you'd validate the credit score here
+    navigate("/statement-review");
+  };
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  const handleLoanApplication = (
+    loanAmount: number,
+    duration: number,
+    monthlyIncome: number
+  ) => {
+    navigate("/confirmation", {
+      state: {
+        loanAmount,
+        loanTenure: duration,
+        monthlyIncome,
+      },
+    });
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <AppBar position="static">
+        {/* <Toolbar>
+          <Typography
+            variant="h6"
+            component={Link}
+            to="/"
+            sx={{ textDecoration: "none", color: "white", flexGrow: 1 }}
+          >
+            LendGrid
+          </Typography>
+          <Button color="inherit" component={Link} to="/">
+            Apply Now
+          </Button>
+        </Toolbar> */}
+      </AppBar>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <LoginPage
+              onLogin={handleLogin}
+              onGoBack={handleGoBack}
+              onCreateAccount={() => {}}
+              onResetPassword={() => {}}
+            />
+          }
+        />
+        <Route
+          path="/statement-review"
+          element={
+            <StatementReview
+              onNext={() => navigate("/personal-details")}
+              onBack={() => navigate("/")}
+            />
+          }
+        />
+        <Route
+          path="/personal-details"
+          element={
+            <PersonalDetails
+              onGoBack={() => navigate("/statement-review")}
+              onSubmitApplication={() => navigate("/loan-application")}
+            />
+          }
+        />
+        <Route
+          path="/loan-application"
+          element={
+            <LoanApplicationPage
+              onSubmitApplication={handleLoanApplication}
+              onGoBack={() => navigate("/personal-details")}
+            />
+          }
+        />
+        <Route path="/confirmation" element={<ConfirmationPage />} />
+      </Routes>
     </div>
+  );
+};
+
+// Root component with Router
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 
