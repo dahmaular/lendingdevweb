@@ -4,7 +4,9 @@ import peopleBg from "../assets/people.svg";
 import ProgressBar from "../components/ProgressBar";
 import {
   useOnboarding1Mutation,
+  useResendEmailOtpMutation,
   useVerifyOtpMutation,
+  useVerifyResendEmailOtpMutation,
 } from "../store/services/baseApi";
 import Modal from "../components/Modal";
 import Spinner from "../components/Spinner";
@@ -57,6 +59,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
   const [lastName, setLastName] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
+  const [resendOTP, setResendOTP] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [displayedEmployers, setDisplayedEmployers] = useState<
     { id: string; name: string }[]
@@ -67,7 +70,8 @@ const LoginPage: React.FC<LoginPageProps> = ({
     title?: string;
   }>({ open: false, message: "", title: undefined });
 
-  const [onboarding1, { isLoading, isError, error }] = useOnboarding1Mutation();
+  const [onboarding1, { isLoading, isError, error, data }] =
+    useOnboarding1Mutation();
 
   const [loadingState, setLoadingState] = useState<boolean>(false);
 
@@ -84,17 +88,16 @@ const LoginPage: React.FC<LoginPageProps> = ({
     { isLoading: verifyLoading, isError: verifyIsError, error: verifyError },
   ] = useVerifyOtpMutation();
 
+  const [resendEmailOtp, { isLoading: resendLoading, data: resendData }] =
+    useResendEmailOtpMutation();
+  const [
+    verifyResendEmailOtp,
+    { isLoading: verifyResendLoading, data: verifyResendData },
+  ] = useVerifyResendEmailOtpMutation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoadingState(true);
-
-    // console.log("Form Data:", {
-    //   email,
-    //   dob: dob.toISOString().split("T")[0],
-    //   firstName,
-    //   lastName,
-    //   employer,
-    // });
 
     if (!email || !firstName || !lastName) {
       setModal({
@@ -137,6 +140,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
         setModal({
           open: true,
           message:
+            response?.message ||
             "Onboarding successful. Please check your email for the OTP.",
           title: "Onboarding Success",
         });
@@ -146,9 +150,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
       }
     } catch (error) {
       console.error("Error during onboarding:", error);
+      setResendOTP(true);
+      setOtp("");
       setModal({
         open: true,
-        message: "An error occurred during onboarding. Please try again.",
+        message:
+          data?.message ||
+          "An error occurred during onboarding. Please try again.",
         title: "Onboarding Error",
       });
       setLoadingState(false);
@@ -187,7 +195,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
     if (!otp || otp.length !== 6) {
       setModal({
         open: true,
-        message: "Please enter a valid 4-digit OTP.",
+        message: "Please enter a valid 6-digit OTP.",
         title: "Invalid OTP",
       });
       return;
@@ -220,10 +228,90 @@ const LoginPage: React.FC<LoginPageProps> = ({
       });
     } else {
       // OTP verification failed
+      console.error("OTP verification failed:", response);
+      setResendOTP(true);
+      setOtp("");
       setModal({
         open: true,
-        message: response.data?.message || "OTP verification failed.",
+        message:
+          (response?.error &&
+            typeof response.error === "object" &&
+            "data" in response.error &&
+            (response.error as any)?.data?.message) ||
+          (response?.error &&
+            typeof response.error === "object" &&
+            "message" in response.error &&
+            (response.error as any)?.message) ||
+          "OTP verification failed.",
         title: "Error",
+      });
+    }
+  };
+
+  const handleResendOTP = async () => {
+    // setResendLoading(true);
+    const loanId = localStorage.getItem("loanId") || "";
+    try {
+      const response = await resendEmailOtp({
+        loanId: loanId,
+      }).unwrap();
+      if (response?.success) {
+        setResendOTP(false);
+        setIsOTP(true);
+        setOtpVerified(false);
+        setModal({
+          open: true,
+          message:
+            response.message ||
+            "OTP resent successfully. Please check your email.",
+          title: "OTP Resent",
+        });
+      } else {
+        setModal({
+          open: true,
+          message:
+            response.message || "Failed to resend OTP. Please try again.",
+          title: "Resend Failed",
+        });
+      }
+    } catch (error: any) {
+      setModal({
+        open: true,
+        message:
+          resendData?.message || "Error resending OTP. Please try again.",
+        title: "Resend Error",
+      });
+    }
+  };
+
+  const handleVerifyResendOTP = async () => {
+    console.log("Verifying Resend OTP...");
+    try {
+      const response = await verifyResendEmailOtp({
+        email: email,
+        otp: otp,
+      }).unwrap();
+      if (response?.success) {
+        setIsOTP(true);
+        setModal({
+          open: true,
+          message: "OTP resent successfully. Please check your email.",
+          title: "OTP Resent",
+        });
+      } else {
+        setModal({
+          open: true,
+          message:
+            response.message || "Failed to resend OTP. Please try again.",
+          title: "Resend Failed",
+        });
+      }
+    } catch (error: any) {
+      setModal({
+        open: true,
+        message:
+          verifyResendData?.message || "Error resending OTP. Please try again.",
+        title: "Resend Error",
       });
     }
   };
@@ -479,19 +567,34 @@ const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             )}
 
-            {/* <div className="forgot-password">
-              <span>Forgot Password?</span>
-              <button
-                type="button"
-                className="text-button reset-button"
-                onClick={onResetPassword}
-              >
-                Reset
-              </button>
-            </div> */}
-
+            {resendOTP && (
+              <div style={{ marginTop: "8px" }}>
+                <span
+                  style={{
+                    color: resendLoading ? "#aaa" : "#1976d2",
+                    textDecoration: "underline",
+                    cursor: resendLoading ? "not-allowed" : "pointer",
+                    fontWeight: 500,
+                    fontSize: "15px",
+                  }}
+                  onClick={() => {
+                    if (!resendLoading) {
+                      handleResendOTP();
+                    }
+                  }}
+                >
+                  {resendLoading
+                    ? "Resending..."
+                    : "Didn’t get the OTP? Resend."}
+                </span>
+              </div>
+            )}
             <div className="form-group">
-              {isLoading || loadingState || verifyLoading ? (
+              {isLoading ||
+              loadingState ||
+              verifyLoading ||
+              resendLoading ||
+              verifyResendLoading ? (
                 <button
                   type="submit"
                   className="login-button"
@@ -529,7 +632,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
               }
             }}
           >
-            Close
+            Ok, got it
           </button>
         }
       >

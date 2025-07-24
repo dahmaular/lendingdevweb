@@ -137,7 +137,14 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
       setOtp("");
       setModal({
         open: true,
-        message: response.data?.message || "OTP verification failed.",
+        message:
+          (response?.error &&
+            "data" in response.error &&
+            (response.error as any).data?.message) ||
+          (response?.error && "message" in response.error
+            ? (response.error as { message?: string }).message
+            : undefined) ||
+          "OTP verification failed.",
         title: "Error",
       });
     }
@@ -185,6 +192,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
             }
           })
           .catch((err) => {
+            console.log("Error submitting form:", err);
             setResendOTP(true);
             setModal({
               open: true,
@@ -217,7 +225,9 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
         setOtpVerified(false);
         setModal({
           open: true,
-          message: "OTP resent successfully. Please check your email.",
+          message:
+            response.message ||
+            "OTP resent successfully. Please check your email.",
           title: "OTP Resent",
         });
       } else {
@@ -355,7 +365,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
               <input
                 type="tel"
                 id="phoneNumber"
-                placeholder="Enter 11-digit phone number"
+                placeholder="Enter 11-digit BVN"
                 value={phoneNumber}
                 onChange={handlePhoneNumberChange}
                 required
@@ -368,7 +378,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 
             {isOTP && (
               <div className="form-group">
-                <label htmlFor="otp">Email OTP</label>
+                <label htmlFor="otp">SMS OTP</label>
                 <div
                   className="password-input-container"
                   style={{
@@ -380,7 +390,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
                   <input
                     type="number"
                     id="otp"
-                    placeholder="Enter the OTP sent to your Email"
+                    placeholder="Enter the OTP sent to you via SMS"
                     value={otp}
                     onChange={(e) => {
                       if (e.target.value.length <= 6) {
@@ -460,7 +470,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
                   }
                 }}
               >
-                Close
+                Ok, got it
               </button>
             }
           >

@@ -123,6 +123,23 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
+    resendEmailOtp: builder.mutation<VerifyOtpResponse, { loanId: string }>({
+      query: (data) => ({
+        url: "/Borrower/resend-step1-email-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    verifyResendEmailOtp: builder.mutation<
+      VerifyOtpResponse,
+      { email: string; otp: string }
+    >({
+      query: (data) => ({
+        url: "/Borrower/validate-email-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
     verifyResendBVNOtp: builder.mutation<
       VerifyOtpResponse,
       { bvn: string; otp: string }
@@ -182,4 +199,6 @@ export const {
   useSalaryReviewOTPMutation,
   useResentBVNOtpMutation,
   useVerifyResendBVNOtpMutation,
+  useResendEmailOtpMutation,
+  useVerifyResendEmailOtpMutation,
 } = baseApi;

@@ -141,7 +141,7 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
       if (!response.success) {
         setModal({
           open: true,
-          message: "Error submitting application: " + response.message,
+          message: response?.message || "Error submitting application.",
           title: "Submission Failed",
         });
         return;
@@ -164,11 +164,12 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
         });
         setModal({
           open: true,
-          message: "Application submitted successfully!",
+          message: response.message || "Application submitted successfully!",
           title: "Success",
         });
       }
     } catch (error: any) {
+      console.error("Error loan application:", error);
       setModal({
         open: true,
         message: error?.message || "An error occurred. Please try again.",
