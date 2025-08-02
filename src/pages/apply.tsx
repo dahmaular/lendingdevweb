@@ -21,6 +21,7 @@ import {
   TextField,
 } from "@mui/material";
 import { EMPLOYERS } from "./personalDetails";
+import Logo from "../assets/logo.jpeg";
 
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -83,6 +84,8 @@ const LoginPage: React.FC<LoginPageProps> = ({
   });
   const [loanId, setLoanId] = useState<string>("");
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  const [showResumeForm, setShowResumeForm] = useState<boolean>(false);
+  const [resumeEmail, setResumeEmail] = useState<string>("");
   const [
     verifyOtp,
     { isLoading: verifyLoading, isError: verifyIsError, error: verifyError },
@@ -105,6 +108,27 @@ const LoginPage: React.FC<LoginPageProps> = ({
         message: "Please fill in all fields.",
         title: "Missing Fields",
       });
+      setLoadingState(false);
+      return;
+    }
+
+    // Check if user is at least 18 years old
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    const dayDiff = today.getDate() - dob.getDate();
+
+    // Adjust age if birthday hasn't occurred this year
+    const actualAge =
+      monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+
+    if (actualAge < 18) {
+      setModal({
+        open: true,
+        message: "You must be at least 18 years old to apply for a loan.",
+        title: "Age Requirement",
+      });
+      setLoadingState(false);
       return;
     }
 
@@ -319,21 +343,48 @@ const LoginPage: React.FC<LoginPageProps> = ({
   return (
     <div className="login-container">
       <div className="login-left-panel">
-        <div className="logo-container">
-          {/* <img src={spectraLogo} alt="Spectra Logo" className="logo" /> */}
-          <h1 className="logo-text">deVpay</h1>
-        </div>
+        {/* <div className="logo-container">
+          <img src={Logo} alt="Spectra Logo" width={150} height={100} />
+        </div> */}
         <div className="illustration-container">
           <img src={peopleBg} alt="Business People" className="illustration" />
         </div>
       </div>
 
       <div className="login-right-panel">
-        <div className="back-button-container">
-          <button className="back-button" onClick={onGoBack}>
-            <span className="back-icon">‹</span>
-            <span>Go Back</span>
-          </button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <div className="logo-container">
+            <img
+              src={Logo}
+              alt="Spectra Logo"
+              width={150}
+              height={100}
+              // className="logo"
+            />
+            {/* <h1 className="logo-text">deVpay</h1> */}
+          </div>
+          <div className="back-button-container">
+            <button
+              className="back-button"
+              onClick={() => setShowResumeForm(true)}
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                color: "#1976d2",
+                textDecoration: "underline",
+                cursor: "pointer",
+              }}
+            >
+              Resume Application
+            </button>
+          </div>
         </div>
 
         <div className="login-form-container">
@@ -347,183 +398,222 @@ const LoginPage: React.FC<LoginPageProps> = ({
             onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
             className="login-form"
           >
-            <FormControl fullWidth sx={{ width: "100%" }}>
-              <InputLabel id="employer-select-label">Employer</InputLabel>
-              <Select
-                labelId="employer-select-label"
-                id="employer-select"
-                value={employer}
-                label="Employer"
-                onChange={(e: SelectChangeEvent<string>) => {
-                  setEmployer(e.target.value);
-                  handleSelectChange("employer")(e);
-                }}
-                required
-                sx={{
-                  height: "48px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "8px",
-                  width: "100%",
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e0e0e0",
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#e0e0e0",
-                  },
-                  "& .MuiSelect-select": {
-                    padding: "12px 16px",
-                    fontSize: "16px",
-                  },
-                }}
-                className="form-input"
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 450,
-                      maxWidth: "40%",
-                    },
-                  },
-                  anchorOrigin: {
-                    vertical: "bottom",
-                    horizontal: "left",
-                  },
-                  transformOrigin: {
-                    vertical: "top",
-                    horizontal: "left",
-                  },
-                  onClose: () => {
-                    setSearchQuery("");
-                    setDisplayedEmployers(EMPLOYERS.slice(0, 100));
-                  },
-                }}
-                displayEmpty
-              >
-                <ListSubheader sx={{ p: 0 }}>
-                  <TextField
-                    size="small"
-                    autoFocus
-                    placeholder="Search employers..."
-                    value={searchQuery}
-                    sx={{
-                      width: "calc(100% - 16px)",
-                      m: 1,
-                      mb: 1,
-                    }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                    onChange={(e) => {
-                      const query = e.target.value.toLowerCase();
-                      setSearchQuery(query);
-                      if (query) {
-                        const filtered = EMPLOYERS.filter((emp) =>
-                          emp.name.toLowerCase().includes(query)
-                        );
-                        setDisplayedEmployers(filtered.slice(0, 100));
-                      } else {
-                        setDisplayedEmployers(EMPLOYERS.slice(0, 100));
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key !== "Escape") {
-                        e.stopPropagation();
-                      }
-                    }}
-                  />
-                </ListSubheader>
-                {displayedEmployers.map((employer) => (
-                  <MenuItem
-                    key={employer.id}
-                    value={employer.id}
-                    sx={{ whiteSpace: "normal", wordBreak: "break-word" }}
+            {showResumeForm ? (
+              <div className="form-group">
+                <label htmlFor="resumeEmail">
+                  Enter your email to resume application
+                </label>
+                <input
+                  type="email"
+                  id="resumeEmail"
+                  placeholder="Enter email"
+                  value={resumeEmail}
+                  onChange={(e) => setResumeEmail(e.target.value)}
+                  required
+                  className="form-input"
+                />
+                <div
+                  style={{ display: "flex", gap: "10px", marginTop: "10px" }}
+                >
+                  <button
+                    type="button"
+                    className="login-button"
+                    style={{ flex: 1 }}
                   >
-                    {employer.name}
-                  </MenuItem>
-                ))}
-                {displayedEmployers.length === 0 && (
-                  <MenuItem disabled>No matching employers found</MenuItem>
-                )}
-                {searchQuery === "" &&
-                  displayedEmployers.length === 100 &&
-                  EMPLOYERS.length > 100 && (
-                    <MenuItem
-                      sx={{ justifyContent: "center", color: "primary.main" }}
-                      onClick={() => {
-                        setDisplayedEmployers(EMPLOYERS);
+                    Resume
+                  </button>
+                  <button
+                    type="button"
+                    className="login-button"
+                    style={{ flex: 1, backgroundColor: "#ccc", color: "#333" }}
+                    onClick={() => setShowResumeForm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <FormControl fullWidth sx={{ width: "100%" }}>
+                  <InputLabel id="employer-select-label">Employer</InputLabel>
+                  <Select
+                    labelId="employer-select-label"
+                    id="employer-select"
+                    value={employer}
+                    label="Employer"
+                    onChange={(e: SelectChangeEvent<string>) => {
+                      setEmployer(e.target.value);
+                      handleSelectChange("employer")(e);
+                    }}
+                    required
+                    sx={{
+                      height: "48px",
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: "8px",
+                      width: "100%",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#e0e0e0",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#e0e0e0",
+                      },
+                      "& .MuiSelect-select": {
+                        padding: "12px 16px",
+                        fontSize: "16px",
+                      },
+                    }}
+                    className="form-input"
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: 450,
+                          maxWidth: "40%",
+                        },
+                      },
+                      anchorOrigin: {
+                        vertical: "bottom",
+                        horizontal: "left",
+                      },
+                      transformOrigin: {
+                        vertical: "top",
+                        horizontal: "left",
+                      },
+                      onClose: () => {
+                        setSearchQuery("");
+                        setDisplayedEmployers(EMPLOYERS.slice(0, 100));
+                      },
+                    }}
+                    displayEmpty
+                  >
+                    <ListSubheader sx={{ p: 0 }}>
+                      <TextField
+                        size="small"
+                        autoFocus
+                        placeholder="Search employers..."
+                        value={searchQuery}
+                        sx={{
+                          width: "calc(100% - 16px)",
+                          m: 1,
+                          mb: 1,
+                        }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon />
+                            </InputAdornment>
+                          ),
+                        }}
+                        onChange={(e) => {
+                          const query = e.target.value.toLowerCase();
+                          setSearchQuery(query);
+                          if (query) {
+                            const filtered = EMPLOYERS.filter((emp) =>
+                              emp.name.toLowerCase().includes(query)
+                            );
+                            setDisplayedEmployers(filtered.slice(0, 100));
+                          } else {
+                            setDisplayedEmployers(EMPLOYERS.slice(0, 100));
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Escape") {
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    </ListSubheader>
+                    {displayedEmployers.map((employer) => (
+                      <MenuItem
+                        key={employer.id}
+                        value={employer.id}
+                        sx={{ whiteSpace: "normal", wordBreak: "break-word" }}
+                      >
+                        {employer.name}
+                      </MenuItem>
+                    ))}
+                    {displayedEmployers.length === 0 && (
+                      <MenuItem disabled>No matching employers found</MenuItem>
+                    )}
+                    {searchQuery === "" &&
+                      displayedEmployers.length === 100 &&
+                      EMPLOYERS.length > 100 && (
+                        <MenuItem
+                          sx={{
+                            justifyContent: "center",
+                            color: "primary.main",
+                          }}
+                          onClick={() => {
+                            setDisplayedEmployers(EMPLOYERS);
+                          }}
+                        >
+                          Load all employers ({EMPLOYERS.length})
+                        </MenuItem>
+                      )}
+                  </Select>
+                </FormControl>
+                <div className="form-group">
+                  <label htmlFor="firstname">First Name</label>
+                  <div className="password-input-container">
+                    <input
+                      type="text"
+                      id="firstname"
+                      placeholder="Enter First Name"
+                      value={firstName}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 11) {
+                          setFirstName(e.target.value);
+                        }
                       }}
-                    >
-                      Load all employers ({EMPLOYERS.length})
-                    </MenuItem>
-                  )}
-              </Select>
-            </FormControl>
-            <div className="form-group">
-              <label htmlFor="firstname">First Name</label>
-              <div className="password-input-container">
-                <input
-                  type="text"
-                  id="firstname"
-                  placeholder="Enter First Name"
-                  value={firstName}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 11) {
-                      setFirstName(e.target.value);
-                    }
-                  }}
-                  required
-                  className="form-input"
-                  // maxLength={11}
-                  // pattern="[0-9]{11}"
-                />
-              </div>
-              <div className="password-input-container">
-                <label htmlFor="lastname">Last Name</label>
-                <input
-                  type="text"
-                  id="lastname"
-                  placeholder="Enter Last Name"
-                  value={lastName}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 11) {
-                      setLastName(e.target.value);
-                    }
-                  }}
-                  required
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="form-input"
-              />
-            </div>
+                      required
+                      className="form-input"
+                      // maxLength={11}
+                      // pattern="[0-9]{11}"
+                    />
+                  </div>
+                  <div className="password-input-container">
+                    <label htmlFor="lastname">Last Name</label>
+                    <input
+                      type="text"
+                      id="lastname"
+                      placeholder="Enter Last Name"
+                      value={lastName}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 11) {
+                          setLastName(e.target.value);
+                        }
+                      }}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email Address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    placeholder="Enter email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="form-input"
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="email">Date of Birth</label>
-              <input
-                type="date"
-                id="dob"
-                placeholder="dd/mm/yyyy"
-                value={dob.toISOString().split("T")[0]}
-                onChange={(e) => setDob(new Date(e.target.value))}
-                required
-                className="form-input"
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="email">Date of Birth</label>
+                  <input
+                    type="date"
+                    id="dob"
+                    placeholder="dd/mm/yyyy"
+                    value={dob.toISOString().split("T")[0]}
+                    onChange={(e) => setDob(new Date(e.target.value))}
+                    required
+                    className="form-input"
+                  />
+                </div>
 
-            {/* <div className="form-group">
+                {/* <div className="form-group">
               <label htmlFor="bvn">BVN</label>
               <div className="password-input-container">
                 <input
@@ -544,76 +634,78 @@ const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             </div> */}
 
-            {isOTP && (
-              <div className="form-group">
-                <label htmlFor="bvn">Email OTP</label>
-                <div className="password-input-container">
-                  <input
-                    type="number"
-                    id="otp"
-                    placeholder="Enter the OTP sent to your Email"
-                    value={otp}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 6) {
-                        setOtp(e.target.value);
-                      }
-                    }}
-                    required
-                    className="form-input"
-                    maxLength={6}
-                    pattern="[0-9]{6}"
-                  />
-                </div>
-              </div>
-            )}
+                {isOTP && (
+                  <div className="form-group">
+                    <label htmlFor="bvn">Email OTP</label>
+                    <div className="password-input-container">
+                      <input
+                        type="number"
+                        id="otp"
+                        placeholder="Enter the OTP sent to your Email"
+                        value={otp}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 6) {
+                            setOtp(e.target.value);
+                          }
+                        }}
+                        required
+                        className="form-input"
+                        maxLength={6}
+                        pattern="[0-9]{6}"
+                      />
+                    </div>
+                  </div>
+                )}
 
-            {resendOTP && (
-              <div style={{ marginTop: "8px" }}>
-                <span
-                  style={{
-                    color: resendLoading ? "#aaa" : "#1976d2",
-                    textDecoration: "underline",
-                    cursor: resendLoading ? "not-allowed" : "pointer",
-                    fontWeight: 500,
-                    fontSize: "15px",
-                  }}
-                  onClick={() => {
-                    if (!resendLoading) {
-                      handleResendOTP();
-                    }
-                  }}
-                >
-                  {resendLoading
-                    ? "Resending..."
-                    : "Didn’t get the OTP? Resend."}
-                </span>
-              </div>
+                {resendOTP && (
+                  <div style={{ marginTop: "8px" }}>
+                    <span
+                      style={{
+                        color: resendLoading ? "#aaa" : "#1976d2",
+                        textDecoration: "underline",
+                        cursor: resendLoading ? "not-allowed" : "pointer",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                      }}
+                      onClick={() => {
+                        if (!resendLoading) {
+                          handleResendOTP();
+                        }
+                      }}
+                    >
+                      {resendLoading
+                        ? "Resending..."
+                        : "Didn’t get the OTP? Resend."}
+                    </span>
+                  </div>
+                )}
+                <div className="form-group">
+                  {isLoading ||
+                  loadingState ||
+                  verifyLoading ||
+                  resendLoading ||
+                  verifyResendLoading ? (
+                    <button
+                      type="submit"
+                      className="login-button"
+                      disabled
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Spinner size={22} />
+                    </button>
+                  ) : (
+                    <button type="submit" className="login-button">
+                      {!isOTP ? "Get started" : "Submit"}
+                    </button>
+                  )}
+                </div>
+              </>
             )}
-            <div className="form-group">
-              {isLoading ||
-              loadingState ||
-              verifyLoading ||
-              resendLoading ||
-              verifyResendLoading ? (
-                <button
-                  type="submit"
-                  className="login-button"
-                  disabled
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                  }}
-                >
-                  <Spinner size={22} />
-                </button>
-              ) : (
-                <button type="submit" className="login-button">
-                  {!isOTP ? "Get started" : "Submit"}
-                </button>
-              )}
-            </div>
           </form>
         </div>
       </div>

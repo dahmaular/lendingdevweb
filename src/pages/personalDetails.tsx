@@ -16,6 +16,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { useSavePersonalDetailsMutation } from "../store/services/baseApi";
 import Spinner from "../components/Spinner";
+import Modal from "../components/Modal";
 
 interface LoginPageProps {
   onSubmitApplication: (formData: PersonalDetailsForm) => void;
@@ -673,6 +674,12 @@ const PersonalDetails: React.FC<LoginPageProps> = ({
     { id: string; name: string }[]
   >(EMPLOYERS.slice(0, 100));
   const [fileName, setFileName] = useState<string>("");
+  const [modal, setModal] = useState<{
+    open: boolean;
+    message: string;
+    title?: string;
+    isSuccess?: boolean;
+  }>({ open: false, message: "", title: undefined, isSuccess: false });
 
   const [savePersonalDetails, { isLoading }] = useSavePersonalDetailsMutation();
 
@@ -734,16 +741,43 @@ const PersonalDetails: React.FC<LoginPageProps> = ({
         .unwrap()
         .then(() => {
           console.log("Personal details submitted successfully");
-          onSubmitApplication(formData);
+          setModal({
+            open: true,
+            message: "Personal details submitted successfully!",
+            title: "Success",
+            isSuccess: true,
+          });
         })
         .catch((error) => {
-          // onSubmitApplication(formData);
           console.error("Error submitting personal details:", error);
-          // Handle error appropriately, e.g., show a notification
-          alert("Failed to submit personal details. Please try again.");
+
+          // Extract error message from different possible error structures
+          let errorMessage =
+            "Failed to submit personal details. Please try again.";
+
+          if (error?.data?.message) {
+            errorMessage = error.data.message;
+          } else if (error?.message) {
+            errorMessage = error.message;
+          } else if (typeof error === "string") {
+            errorMessage = error;
+          }
+
+          setModal({
+            open: true,
+            message: errorMessage,
+            title: "Submission Failed",
+            isSuccess: false,
+          });
         });
     } catch (error) {
       console.error("Error submitting personal details:", error);
+      setModal({
+        open: true,
+        message: "An unexpected error occurred. Please try again.",
+        title: "Error",
+        isSuccess: false,
+      });
     }
     // onSubmitApplication(formDataToSubmit);
   };
@@ -775,156 +809,6 @@ const PersonalDetails: React.FC<LoginPageProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
-            {/* <div className="form-group">
-              <FormControl fullWidth sx={{ width: "100%" }}>
-                <InputLabel id="employer-select-label">Employer</InputLabel>
-                <Select
-                  labelId="employer-select-label"
-                  id="employer-select"
-                  value={formData.employer}
-                  label="Employer"
-                  onChange={handleSelectChange("employer")}
-                  required
-                  sx={{
-                    height: "48px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    width: "100%",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                      fontSize: "16px",
-                    },
-                  }}
-                  className="form-input"
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 450,
-                        maxWidth: "40%",
-                      },
-                    },
-                    anchorOrigin: {
-                      vertical: "bottom",
-                      horizontal: "left",
-                    },
-                    transformOrigin: {
-                      vertical: "top",
-                      horizontal: "left",
-                    },
-                    onClose: () => {
-                      setSearchQuery("");
-                      setDisplayedEmployers(EMPLOYERS.slice(0, 100));
-                    },
-                  }}
-                  displayEmpty
-                >
-                  <ListSubheader sx={{ p: 0 }}>
-                    <TextField
-                      size="small"
-                      autoFocus
-                      placeholder="Search employers..."
-                      value={searchQuery}
-                      sx={{
-                        width: "calc(100% - 16px)",
-                        m: 1,
-                        mb: 1,
-                      }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                      onChange={(e) => {
-                        const query = e.target.value.toLowerCase();
-                        setSearchQuery(query);
-                        if (query) {
-                          const filtered = EMPLOYERS.filter((emp) =>
-                            emp.name.toLowerCase().includes(query)
-                          );
-                          setDisplayedEmployers(filtered.slice(0, 100));
-                        } else {
-                          setDisplayedEmployers(EMPLOYERS.slice(0, 100));
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Escape") {
-                          e.stopPropagation();
-                        }
-                      }}
-                    />
-                  </ListSubheader>
-                  {displayedEmployers.map((employer) => (
-                    <MenuItem
-                      key={employer.id}
-                      value={employer.id}
-                      sx={{ whiteSpace: "normal", wordBreak: "break-word" }}
-                    >
-                      {employer.name}
-                    </MenuItem>
-                  ))}
-                  {displayedEmployers.length === 0 && (
-                    <MenuItem disabled>No matching employers found</MenuItem>
-                  )}
-                  {searchQuery === "" &&
-                    displayedEmployers.length === 100 &&
-                    EMPLOYERS.length > 100 && (
-                      <MenuItem
-                        sx={{ justifyContent: "center", color: "primary.main" }}
-                        onClick={() => {
-                          setDisplayedEmployers(EMPLOYERS);
-                        }}
-                      >
-                        Load all employers ({EMPLOYERS.length})
-                      </MenuItem>
-                    )}
-                </Select>
-              </FormControl>
-            </div> */}
-
-            {/* <div className="form-group">
-              <FormControl fullWidth>
-                <InputLabel id="industry-select-label">Industry</InputLabel>
-                <Select
-                  labelId="industry-select-label"
-                  id="industry-select"
-                  value={formData.industry}
-                  label="Industry"
-                  onChange={handleSelectChange("industry")}
-                  required
-                  sx={{
-                    height: "48px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                      fontSize: "16px",
-                    },
-                  }}
-                  className="form-input"
-                >
-                  {INDUSTRIES.map((industry) => (
-                    <MenuItem key={industry.id} value={industry.id}>
-                      {industry.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div> */}
-
             <div className="form-group">
               <TextField
                 fullWidth
@@ -1036,6 +920,28 @@ const PersonalDetails: React.FC<LoginPageProps> = ({
           </form>
         </div>
       </div>
+
+      <Modal
+        open={modal.open}
+        onClose={() => setModal({ ...modal, open: false })}
+        title={modal.title}
+        actions={
+          <button
+            className="login-button"
+            onClick={() => {
+              if (modal.isSuccess) {
+                onSubmitApplication(formData);
+              } else {
+                setModal({ ...modal, open: false });
+              }
+            }}
+          >
+            {modal.isSuccess ? "Continue" : "Try Again"}
+          </button>
+        }
+      >
+        {modal.message}
+      </Modal>
     </div>
   );
 };
