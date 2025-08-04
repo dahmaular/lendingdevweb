@@ -370,7 +370,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
             />
             {/* <h1 className="logo-text">deVpay</h1> */}
           </div>
-          <div className="back-button-container">
+          <div className="back-button-container" style={{ width: "50%" }}>
             <button
               className="back-button"
               onClick={() => setShowResumeForm(true)}
@@ -382,7 +382,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 cursor: "pointer",
               }}
             >
-              Resume Application
+              Not your first time? Resume application
             </button>
           </div>
         </div>
@@ -419,6 +419,35 @@ const LoginPage: React.FC<LoginPageProps> = ({
                     type="button"
                     className="login-button"
                     style={{ flex: 1 }}
+                    onClick={() => {
+                      // Email validation
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      if (!resumeEmail) {
+                        setModal({
+                          open: true,
+                          message: "Please enter your email address.",
+                          title: "Email Required",
+                        });
+                        return;
+                      }
+                      if (!emailRegex.test(resumeEmail)) {
+                        setModal({
+                          open: true,
+                          message: "Please enter a valid email address.",
+                          title: "Invalid Email",
+                        });
+                        return;
+                      }
+                      // If validation passes, proceed with resume logic
+                      console.log("Resuming application for:", resumeEmail);
+                      // Add your resume logic here
+                      setModal({
+                        open: true,
+                        message:
+                          "Resume functionality will be implemented soon.",
+                        title: "Resume Application",
+                      });
+                    }}
                   >
                     Resume
                   </button>
