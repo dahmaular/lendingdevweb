@@ -30,7 +30,9 @@ export interface SalaryHistoryReviewResponse {
 export interface SavePersonalDetailsResponse {
   success: boolean;
   message: string;
-  data: null | {};
+  data: null | {
+    maxLoanEligible?: number;
+  };
 }
 export interface LoanBreakdownRequest {
   amount: number;

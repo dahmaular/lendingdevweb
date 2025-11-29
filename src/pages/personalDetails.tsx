@@ -739,8 +739,17 @@ const PersonalDetails: React.FC<LoginPageProps> = ({
     try {
       savePersonalDetails(formDataToSubmit)
         .unwrap()
-        .then(() => {
-          console.log("Personal details submitted successfully");
+        .then((response) => {
+          console.log("Personal details submitted successfully", response);
+
+          // Save maxLoanEligible to localStorage for use in the next step
+          if (response?.data?.maxLoanEligible) {
+            localStorage.setItem(
+              "maxLoanEligible",
+              response.data.maxLoanEligible.toString()
+            );
+          }
+
           setModal({
             open: true,
             message: "Personal details submitted successfully!",

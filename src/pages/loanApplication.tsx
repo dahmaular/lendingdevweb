@@ -54,6 +54,12 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
   const [isLoanBreakDown, setIsLoanBreakDown] = useState<boolean>(false);
   const navigate = useNavigate();
 
+  // Get maxLoanEligible from localStorage (saved from personal details step)
+  const maxLoanEligible = localStorage.getItem("maxLoanEligible");
+  const maxLoanAmount = maxLoanEligible
+    ? parseFloat(maxLoanEligible)
+    : 10000000;
+
   const [submitLoan, { isLoading }] = useSubmitLoanMutation();
   const [modal, setModal] = useState<{
     open: boolean;
@@ -241,9 +247,10 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
               {loanAmount && parseFloat(loanAmount) < 10000 && (
                 <div className="error-text">Minimum amount is ₦1,000</div>
               )}
-              {loanAmount && parseFloat(loanAmount) > 10000000 && (
+              {loanAmount && parseFloat(loanAmount) > maxLoanAmount && (
                 <div className="error-text">
-                  Maximum loan amount is ₦10,000,000
+                  Maximum loan amount is{" "}
+                  {formatCurrency(maxLoanAmount.toString())}
                 </div>
               )}
               <p
@@ -256,7 +263,7 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
                 }}
               >
                 Based on your credit score review, the maximum amount you're
-                eligible for is ₦10,000,000
+                eligible for is {formatCurrency(maxLoanAmount.toString())}
               </p>
             </div>
 
