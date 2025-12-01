@@ -1,43 +1,82 @@
 import React, { useState } from "react";
-import "../pages/login.css";
-import peopleBg from "../assets/people.svg";
-import ProgressBar from "./ProgressBar";
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Box, Typography, keyframes, Chip, Container } from "@mui/material";
 import {
   useResentBVNOtpMutation,
   useSalaryReviewMutation,
   useSalaryReviewOTPMutation,
   useVerifyResendBVNOtpMutation,
 } from "../store/services/baseApi";
-import Spinner from "./Spinner";
-import Modal from "./Modal";
+
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ShieldIcon from "@mui/icons-material/Shield";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import LockIcon from "@mui/icons-material/Lock";
+import Logo from "../assets/logo.jpeg";
+
+import {
+  GlassCard,
+  ModernButton,
+  ModernInput,
+  ModernProgressBar,
+  ModernModal,
+  ModernSelect,
+  AnimatedBackground,
+} from "./ui";
 
 interface StatementReviewProps {
   onNext: () => void;
   onBack: () => void;
 }
 
-// Nigerian banks list
 const NIGERIAN_BANKS = [
-  { code: "044", name: "Access Bank" },
-  { code: "023", name: "Citibank" },
-  { code: "063", name: "Access Bank (Diamond)" },
-  { code: "050", name: "Ecobank" },
-  { code: "070", name: "Fidelity Bank" },
-  { code: "011", name: "First Bank" },
-  { code: "214", name: "FCMB" },
-  { code: "058", name: "Guaranty Trust Bank" },
-  { code: "030", name: "Heritage Bank" },
-  { code: "082", name: "Keystone Bank" },
-  { code: "076", name: "Polaris Bank" },
-  { code: "221", name: "Stanbic IBTC" },
-  { code: "232", name: "Sterling Bank" },
-  { code: "032", name: "Union Bank" },
-  { code: "033", name: "United Bank for Africa" },
-  { code: "215", name: "Unity Bank" },
-  { code: "035", name: "Wema Bank" },
-  { code: "057", name: "Zenith Bank" },
+  { value: "044", label: "Access Bank" },
+  { value: "023", label: "Citibank" },
+  { value: "063", label: "Access Bank (Diamond)" },
+  { value: "050", label: "Ecobank" },
+  { value: "070", label: "Fidelity Bank" },
+  { value: "011", label: "First Bank" },
+  { value: "214", label: "FCMB" },
+  { value: "058", label: "Guaranty Trust Bank" },
+  { value: "030", label: "Heritage Bank" },
+  { value: "082", label: "Keystone Bank" },
+  { value: "076", label: "Polaris Bank" },
+  { value: "221", label: "Stanbic IBTC" },
+  { value: "232", label: "Sterling Bank" },
+  { value: "032", label: "Union Bank" },
+  { value: "033", label: "United Bank for Africa" },
+  { value: "215", label: "Unity Bank" },
+  { value: "035", label: "Wema Bank" },
+  { value: "057", label: "Zenith Bank" },
 ];
+
+const float1 = keyframes`
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(2deg); }
+  75% { transform: translateY(10px) rotate(-2deg); }
+`;
+
+const float2 = keyframes`
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-25px) scale(1.05); }
+`;
+
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 export const StatementReview: React.FC<StatementReviewProps> = ({
   onNext,
@@ -46,14 +85,12 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [accountNumber, setAccountNumber] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [salaryReview, { isLoading, isError, error }] =
-    useSalaryReviewMutation();
+  const [salaryReview, { isLoading }] = useSalaryReviewMutation();
   const [salaryReviewOTP, { isLoading: verifyLoading }] =
     useSalaryReviewOTPMutation();
   const [resentBVNOtp, { isLoading: resendLoading }] =
     useResentBVNOtpMutation();
-  const [verifyResendBVNOtp, { isLoading: verifyResendLoading }] =
-    useVerifyResendBVNOtpMutation();
+  const [verifyResendBVNOtp] = useVerifyResendBVNOtpMutation();
 
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
@@ -63,10 +100,14 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     open: boolean;
     message: string;
     title?: string;
-  }>({ open: false, message: "", title: undefined });
-  // const [resendLoading, setResendLoading] = useState<boolean>(false);
+    type?: "success" | "error";
+  }>({ open: false, message: "", title: undefined, type: "success" });
 
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const isAnyLoading = isLoading || verifyLoading || resendLoading;
+
+  const handlePhoneNumberChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 11) {
       setPhoneNumber(value);
@@ -74,7 +115,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
   };
 
   const handleAccountNumberChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const value = e.target.value.replace(/\D/g, "");
     if (value.length <= 10) {
@@ -82,57 +123,39 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     }
   };
 
-  const handleOtpView = async () => {
-    setTimeout(() => {
-      setIsOTP(true);
-      // setLoadingState(false);
-    }, 1000);
-  };
-
   const handleOTPSubmit = async (e: React.FormEvent) => {
     const loanId = localStorage.getItem("loanId");
     e.preventDefault();
+
     if (otpVerified) {
       handleVerifyResendOTP();
       return;
     }
-    // onLogin(email, bvn, dob.toDateString());
+
     if (!otp || otp.length !== 6) {
       setModal({
         open: true,
-        message: "Please enter a valid 4-digit OTP.",
+        message: "Please enter a valid 6-digit OTP.",
         title: "Invalid OTP",
+        type: "error",
       });
       return;
     }
-    if (verifyLoading) {
-      setModal({
-        open: true,
-        message: "Processing, please wait...",
-        title: "Please Wait",
-      });
-      return;
-    }
-    console.log("Loan ID:", {
-      loanId: loanId || "",
-      otp: otp,
-    });
+
     const response = await salaryReviewOTP({
       loanId: loanId || "",
       otp: otp,
     });
 
-    console.log("Verify OTP Response:", response);
     if (response.data?.success) {
-      // OTP verification successful
       setOtpVerified(true);
       setModal({
         open: true,
         message: "OTP verified successfully.",
-        title: "Success",
+        title: "Success!",
+        type: "success",
       });
     } else {
-      // OTP verification failed
       setResendOTP(true);
       setOtp("");
       setModal({
@@ -141,32 +164,18 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
           (response?.error &&
             "data" in response.error &&
             (response.error as any).data?.message) ||
-          (response?.error && "message" in response.error
-            ? (response.error as { message?: string }).message
-            : undefined) ||
           "OTP verification failed.",
         title: "Error",
+        type: "error",
       });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // onNext();
-    console.log("Bank:", selectedBank);
-    console.log("Account Number:", accountNumber);
-    console.log("Phone Number:", phoneNumber);
     const loanId = localStorage.getItem("loanId");
 
-    console.log("Loan ID:", {
-      bankCode: selectedBank,
-      accountNo: accountNumber,
-      bvn: phoneNumber,
-      loanId: loanId || "",
-    });
-    // Here you can handle the form submission, e.g., send data to an API
     if (selectedBank && accountNumber && phoneNumber) {
-      // Simulate API call or further processing
       try {
         salaryReview({
           bankCode: selectedBank,
@@ -176,7 +185,6 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
         })
           .unwrap()
           .then((response) => {
-            console.log("Form submitted successfully:", response.data);
             if (response?.success) {
               setIsOTP(true);
             } else {
@@ -184,71 +192,58 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
               setOtp("");
               setModal({
                 open: true,
-                message:
-                  response.message ||
-                  "Failed to submit form. Please try again.",
+                message: response.message || "Failed to submit form.",
                 title: "Submission Failed",
+                type: "error",
               });
             }
           })
           .catch((err) => {
-            console.log("Error submitting form:", err);
             setResendOTP(true);
             setModal({
               open: true,
-              message:
-                err?.message || "Error submitting form. Please try again.",
+              message: err?.message || "Error submitting form.",
               title: "Submission Error",
+              type: "error",
             });
-            if (isError) {
-              console.error("Error details:", error);
-            }
           });
       } catch (error) {
         console.error("Error submitting form:", error);
-        // onNext();
       }
-    } else {
-      console.error("Please fill in all fields correctly.");
     }
   };
 
   const handleResendOTP = async () => {
-    // setResendLoading(true);
-    const loanId = localStorage.getItem("loanId");
     try {
-      const response = await resentBVNOtp({
-        bvn: phoneNumber,
-      }).unwrap();
+      const response = await resentBVNOtp({ bvn: phoneNumber }).unwrap();
       if (response?.success) {
         setIsOTP(true);
         setOtpVerified(false);
         setModal({
           open: true,
-          message:
-            response.message ||
-            "OTP resent successfully. Please check your email.",
+          message: response.message || "OTP resent successfully.",
           title: "OTP Resent",
+          type: "success",
         });
       } else {
         setModal({
           open: true,
-          message:
-            response.message || "Failed to resend OTP. Please try again.",
+          message: response.message || "Failed to resend OTP.",
           title: "Resend Failed",
+          type: "error",
         });
       }
     } catch (error: any) {
       setModal({
         open: true,
-        message: error?.message || "Error resending OTP. Please try again.",
+        message: error?.message || "Error resending OTP.",
         title: "Resend Error",
+        type: "error",
       });
     }
   };
 
   const handleVerifyResendOTP = async () => {
-    console.log("Verifying Resend OTP...");
     try {
       const response = await verifyResendBVNOtp({
         bvn: phoneNumber,
@@ -258,227 +253,519 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
         setIsOTP(true);
         setModal({
           open: true,
-          message: "OTP resent successfully. Please check your email.",
-          title: "OTP Resent",
+          message: "OTP verified successfully.",
+          title: "Success!",
+          type: "success",
         });
       } else {
         setModal({
           open: true,
-          message:
-            response.message || "Failed to resend OTP. Please try again.",
-          title: "Resend Failed",
+          message: response.message || "Failed to verify OTP.",
+          title: "Verification Failed",
+          type: "error",
         });
       }
     } catch (error: any) {
       setModal({
         open: true,
-        message: error?.message || "Error resending OTP. Please try again.",
-        title: "Resend Error",
+        message: error?.message || "Error verifying OTP.",
+        title: "Verification Error",
+        type: "error",
       });
     }
   };
 
+  const securityFeatures = [
+    {
+      icon: <ShieldIcon sx={{ fontSize: 24 }} />,
+      title: "Bank-Level Security",
+      description: "256-bit encryption",
+    },
+    {
+      icon: <VerifiedUserIcon sx={{ fontSize: 24 }} />,
+      title: "Verified Process",
+      description: "BVN protected",
+    },
+    {
+      icon: <LockIcon sx={{ fontSize: 24 }} />,
+      title: "Data Privacy",
+      description: "Your data is safe",
+    },
+  ];
+
   return (
-    <div className="login-container">
-      <div className="login-left-panel">
-        <div className="logo-container">
-          <h1 className="logo-text">deVpay</h1>
-        </div>
-        <div className="illustration-container">
-          <img src={peopleBg} alt="Business People" className="illustration" />
-        </div>
-      </div>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Animated Background */}
+      <AnimatedBackground variant="dark" />
 
-      <div className="login-right-panel">
-        <div className="back-button-container">
-          <button className="back-button" onClick={onBack}>
-            <span className="back-icon">‹</span>
-            <span>Go Back</span>
-          </button>
-        </div>
+      {/* Left Panel - Hero Section */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: "none", lg: "flex" },
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 6,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {/* Floating decorative elements */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: "15%",
+            left: "10%",
+            width: 80,
+            height: 80,
+            borderRadius: "24px",
+            background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+            opacity: 0.2,
+            animation: `${float1} 6s ease-in-out infinite`,
+            transform: "rotate(15deg)",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: "20%",
+            right: "15%",
+            width: 60,
+            height: 60,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+            opacity: 0.2,
+            animation: `${float2} 8s ease-in-out infinite`,
+          }}
+        />
 
-        <div className="login-form-container">
-          <ProgressBar currentStep={2} />
-          <div className="login-header">
-            <h1>Account Review</h1>
-            <p>Please provide your bank details for statement review.</p>
-          </div>
-
-          <form
-            onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
-            className="login-form"
+        <Box
+          sx={{
+            textAlign: "center",
+            maxWidth: "480px",
+            animation: `${fadeInUp} 0.8s ease-out`,
+          }}
+        >
+          {/* Bank Icon */}
+          <Box
+            sx={{
+              width: 100,
+              height: 100,
+              borderRadius: "28px",
+              background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 4,
+              boxShadow: "0 20px 40px rgba(0, 168, 89, 0.3)",
+            }}
           >
-            <div className="form-group">
-              <FormControl fullWidth>
-                <InputLabel id="bank-select-label">Select Bank</InputLabel>
-                <Select
-                  labelId="bank-select-label"
-                  id="bank-select"
-                  value={selectedBank}
-                  label="Select Bank"
-                  onChange={(e) => setSelectedBank(e.target.value)}
-                  required
+            <AccountBalanceIcon sx={{ fontSize: 50, color: "#fff" }} />
+          </Box>
+
+          <Typography
+            variant="h2"
+            sx={{
+              fontSize: { lg: "2.75rem", xl: "3.25rem" },
+              fontWeight: 800,
+              color: "#fff",
+              lineHeight: 1.2,
+              mb: 2,
+              textShadow: "0 4px 30px rgba(0,0,0,0.3)",
+            }}
+          >
+            Secure Account Verification
+          </Typography>
+
+          <Typography
+            variant="h6"
+            sx={{
+              color: "rgba(255,255,255,0.7)",
+              fontWeight: 400,
+              mb: 5,
+              lineHeight: 1.6,
+            }}
+          >
+            Link your bank account securely. We use bank-level encryption to protect your information.
+          </Typography>
+
+          {/* Security Features */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {securityFeatures.map((feature, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  p: 2.5,
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.05)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  flex: "1 1 120px",
+                  maxWidth: "140px",
+                  transition: "all 0.3s ease",
+                  animation: `${fadeInUp} 0.8s ease-out ${0.2 + idx * 0.1}s backwards`,
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    background: "rgba(255,255,255,0.1)",
+                    borderColor: "rgba(0, 168, 89, 0.5)",
+                  },
+                }}
+              >
+                <Box
                   sx={{
-                    height: "48px", // Matches the input field height
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                      fontSize: "16px",
-                    },
-                  }}
-                  className="form-input"
-                >
-                  {NIGERIAN_BANKS.map((bank) => (
-                    <MenuItem key={bank.code} value={bank.code}>
-                      {bank.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="accountNumber">Account Number</label>
-              <input
-                type="text"
-                id="accountNumber"
-                placeholder="Enter 10-digit account number"
-                value={accountNumber}
-                onChange={handleAccountNumberChange}
-                required
-                className="form-input"
-                maxLength={10}
-                pattern="\d{10}"
-                inputMode="numeric"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phoneNumber">BVN</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                placeholder="Enter 11-digit BVN"
-                value={phoneNumber}
-                onChange={handlePhoneNumberChange}
-                required
-                className="form-input"
-                maxLength={11}
-                pattern="\d{11}"
-                inputMode="numeric"
-              />
-            </div>
-
-            {isOTP && (
-              <div className="form-group">
-                <label htmlFor="otp">SMS OTP</label>
-                <div
-                  className="password-input-container"
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                  }}
-                >
-                  <input
-                    type="number"
-                    id="otp"
-                    placeholder="Enter the OTP sent to you via SMS"
-                    value={otp}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 6) {
-                        setOtp(e.target.value);
-                      }
-                    }}
-                    required
-                    className="form-input"
-                    maxLength={6}
-                    pattern="[0-9]{6}"
-                  />
-                </div>
-              </div>
-            )}
-
-            {resendOTP && (
-              <div style={{ marginTop: "8px" }}>
-                <span
-                  style={{
-                    color: resendLoading ? "#aaa" : "#1976d2",
-                    textDecoration: "underline",
-                    cursor: resendLoading ? "not-allowed" : "pointer",
-                    fontWeight: 500,
-                    fontSize: "15px",
-                  }}
-                  onClick={() => {
-                    if (
-                      !resendLoading &&
-                      selectedBank &&
-                      accountNumber &&
-                      phoneNumber
-                    ) {
-                      handleResendOTP();
-                    }
-                  }}
-                >
-                  {resendLoading ? "Resending..." : "Resend OTP"}
-                </span>
-              </div>
-            )}
-
-            <div className="form-group">
-              {isLoading ? (
-                <button
-                  type="submit"
-                  className="login-button"
-                  disabled
-                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 8,
+                    color: "#fff",
+                    mb: 1.5,
+                    mx: "auto",
                   }}
                 >
-                  <Spinner size={22} />
-                </button>
-              ) : (
-                <button type="submit" className="login-button">
-                  Continue
-                </button>
-              )}
-            </div>
-          </form>
+                  {feature.icon}
+                </Box>
+                <Typography
+                  sx={{
+                    color: "#fff",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    mb: 0.5,
+                  }}
+                >
+                  {feature.title}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {feature.description}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
 
-          <Modal
-            open={modal.open}
-            onClose={() => setModal({ ...modal, open: false })}
-            title={modal.title}
-            actions={
-              <button
-                className="login-button"
-                onClick={() => {
-                  if (otpVerified) {
-                    onNext();
-                  } else {
-                    setModal({ ...modal, open: false });
-                  }
+      {/* Right Panel - Form Section */}
+      <Box
+        sx={{
+          flex: { xs: 1, lg: "0 0 560px" },
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          zIndex: 1,
+          background: { 
+            xs: "transparent", 
+            lg: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)" 
+          },
+          backdropFilter: { xs: "none", lg: "blur(20px)" },
+          borderLeft: { xs: "none", lg: "1px solid rgba(255,255,255,0.2)" },
+        }}
+      >
+        <Container maxWidth="sm" sx={{ py: 4, flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* Header */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 4,
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "16px",
+                background: "#fff",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+                border: "1px solid rgba(0, 168, 89, 0.1)",
+              }}
+            >
+              <img
+                src={Logo}
+                alt="Logo"
+                style={{ width: "100px", height: "auto", borderRadius: "8px" }}
+              />
+            </Box>
+            <ModernButton
+              variant="outline"
+              onClick={onBack}
+              startIcon={<ArrowBackIcon />}
+              sx={{
+                borderColor: { xs: "rgba(255,255,255,0.5)", lg: "#00A859" },
+                color: { xs: "#fff", lg: "#00A859" },
+                "&:hover": {
+                  background: { xs: "rgba(255,255,255,0.1)", lg: "rgba(0, 168, 89, 0.05)" },
+                  borderColor: { xs: "#fff", lg: "#008847" },
+                },
+              }}
+            >
+              Back
+            </ModernButton>
+          </Box>
+
+          {/* Main Card */}
+          <GlassCard
+            variant="elevated"
+            sx={{
+              flex: 1,
+              p: { xs: 3, sm: 4 },
+              display: "flex",
+              flexDirection: "column",
+              background: { xs: "rgba(255,255,255,0.95)", lg: "#fff" },
+              border: "1px solid rgba(0, 168, 89, 0.08)",
+              animation: `${fadeInUp} 0.6s ease-out`,
+            }}
+          >
+            {/* Progress */}
+            <Box sx={{ mb: 4 }}>
+              <ModernProgressBar 
+                steps={4} 
+                currentStep={2} 
+                stepLabels={["Details", "Verify", "Review", "Complete"]}
+              />
+            </Box>
+
+            {/* Form Header */}
+            <Box sx={{ mb: 4, textAlign: "center" }}>
+              <Chip
+                label="Step 2 of 4"
+                sx={{
+                  mb: 2,
+                  background: "linear-gradient(135deg, rgba(0, 168, 89, 0.1) 0%, rgba(0, 201, 106, 0.1) 100%)",
+                  color: "#00A859",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  border: "1px solid rgba(0, 168, 89, 0.2)",
+                }}
+              />
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: "#0F172A",
+                  mb: 1,
                 }}
               >
-                Ok, got it
-              </button>
+                Bank Account Details
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: "#64748B",
+                  maxWidth: "320px",
+                  mx: "auto",
+                }}
+              >
+                Link your salary account for automatic statement retrieval
+              </Typography>
+            </Box>
+
+            {/* Form */}
+            <Box
+              component="form"
+              onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 2.5,
+                flex: 1,
+              }}
+            >
+              <ModernSelect
+                label="Select Bank"
+                value={selectedBank}
+                onChange={(value) => setSelectedBank(value)}
+                options={NIGERIAN_BANKS}
+                startIcon={<AccountBalanceIcon />}
+                searchable
+                searchPlaceholder="Search banks..."
+                required
+              />
+
+              <ModernInput
+                label="Account Number"
+                placeholder="Enter 10-digit account number"
+                value={accountNumber}
+                onChange={handleAccountNumberChange}
+                startIcon={<CreditCardIcon />}
+                required
+                inputProps={{ maxLength: 10 }}
+              />
+
+              <ModernInput
+                label="BVN"
+                placeholder="Enter 11-digit BVN"
+                value={phoneNumber}
+                onChange={handlePhoneNumberChange}
+                startIcon={<FingerprintIcon />}
+                required
+                inputProps={{ maxLength: 11 }}
+              />
+
+              {isOTP && (
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: "16px",
+                    background:
+                      "linear-gradient(135deg, rgba(0, 168, 89, 0.05) 0%, rgba(0, 201, 106, 0.05) 100%)",
+                    border: "1px solid rgba(0, 168, 89, 0.15)",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                    <CheckCircleOutlineIcon sx={{ color: "#00A859", fontSize: 20 }} />
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#00A859", fontWeight: 500 }}
+                    >
+                      OTP sent to your registered phone
+                    </Typography>
+                  </Box>
+                  <ModernInput
+                    label="Enter OTP"
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 6) setOtp(value);
+                    }}
+                    startIcon={<LockOutlinedIcon />}
+                    required
+                  />
+                </Box>
+              )}
+
+              {resendOTP && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    cursor: resendLoading ? "not-allowed" : "pointer",
+                    opacity: resendLoading ? 0.6 : 1,
+                    transition: "all 0.3s ease",
+                    py: 1,
+                    "&:hover": {
+                      opacity: resendLoading ? 0.6 : 0.8,
+                    },
+                  }}
+                  onClick={() => !resendLoading && handleResendOTP()}
+                >
+                  <RefreshIcon
+                    sx={{
+                      color: "#00A859",
+                      animation: resendLoading
+                        ? "spin 1s linear infinite"
+                        : "none",
+                      "@keyframes spin": {
+                        from: { transform: "rotate(0deg)" },
+                        to: { transform: "rotate(360deg)" },
+                      },
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#00A859",
+                      fontWeight: 600,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {resendLoading ? "Resending..." : "Didn't get the OTP? Resend"}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box sx={{ mt: "auto", pt: 3 }}>
+                <ModernButton
+                  type="submit"
+                  variant="primary"
+                  fullWidth
+                  loading={isAnyLoading}
+                  endIcon={!isAnyLoading && <ArrowForwardIcon />}
+                  glow
+                  sx={{
+                    py: 2,
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {isOTP ? "Verify & Continue" : "Continue"}
+                </ModernButton>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                    mt: 2,
+                  }}
+                >
+                  <LockIcon sx={{ fontSize: 14, color: "#94A3B8" }} />
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "#94A3B8" }}
+                  >
+                    Your information is encrypted and secure
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </GlassCard>
+        </Container>
+      </Box>
+
+      {/* Modal */}
+      <ModernModal
+        open={modal.open}
+        onClose={() => {
+          if (otpVerified) {
+            onNext();
+          } else {
+            setModal({ ...modal, open: false });
+          }
+        }}
+        title={modal.title || ""}
+        type={modal.type || "success"}
+        primaryAction={{
+          label: otpVerified ? "Continue" : "Got it",
+          onClick: () => {
+            if (otpVerified) {
+              onNext();
+            } else {
+              setModal({ ...modal, open: false });
             }
-          >
-            {modal.message}
-          </Modal>
-        </div>
-      </div>
-    </div>
+          },
+        }}
+      >
+        <Typography variant="body1" sx={{ textAlign: "center", color: "#475569" }}>
+          {modal.message}
+        </Typography>
+      </ModernModal>
+    </Box>
   );
 };
 

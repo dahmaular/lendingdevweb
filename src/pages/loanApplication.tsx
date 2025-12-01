@@ -1,21 +1,44 @@
-import React, { use, useState } from "react";
-import "./login.css";
-import peopleBg from "../assets/people.svg";
-import ProgressBar from "../components/ProgressBar";
-import {
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from "@mui/material";
-import {
-  useSubmitLoanApplicationMutation,
-  useSubmitLoanMutation,
-} from "../store/services/baseApi";
-import Modal from "../components/Modal";
-import Spinner from "../components/Spinner";
+import React, { useState } from "react";
+import { Box, Typography, Container, Chip, keyframes } from "@mui/material";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SendIcon from "@mui/icons-material/Send";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import SpeedIcon from "@mui/icons-material/Speed";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import { useSubmitLoanMutation } from "../store/services/baseApi";
 import { useNavigate } from "react-router-dom";
+import Logo from "../assets/logo.jpeg";
+import {
+  GlassCard,
+  ModernButton,
+  ModernInput,
+  ModernProgressBar,
+  ModernModal,
+  ModernSpinner,
+  ModernSelect,
+  AnimatedBackground,
+} from "../components/ui";
+
+// Animations
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+`;
 
 interface LoginPageProps {
   onSubmitApplication: (
@@ -26,13 +49,11 @@ interface LoginPageProps {
   onGoBack: () => void;
 }
 
-// Duration options in months
 const DURATION_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
-  id: String(i + 1),
-  name: `${i + 1} ${i + 1 === 1 ? "Month" : "Months"}`,
+  value: String(i + 1),
+  label: `${i + 1} ${i + 1 === 1 ? "Month" : "Months"}`,
 }));
 
-// Format number to Nigerian Naira
 const formatCurrency = (value: string): string => {
   const number = parseFloat(value);
   if (isNaN(number)) return "";
@@ -44,17 +65,34 @@ const formatCurrency = (value: string): string => {
   }).format(number);
 };
 
+// Feature items for left panel
+const features = [
+  {
+    icon: <SpeedIcon sx={{ fontSize: 24 }} />,
+    title: "Instant Calculation",
+    description: "Get real-time loan breakdown",
+  },
+  {
+    icon: <TrendingUpIcon sx={{ fontSize: 24 }} />,
+    title: "Flexible Terms",
+    description: "Choose your preferred duration",
+  },
+  {
+    icon: <CheckCircleOutlineIcon sx={{ fontSize: 24 }} />,
+    title: "Quick Approval",
+    description: "Fast decision on your application",
+  },
+];
+
 const LoanApplicationPage: React.FC<LoginPageProps> = ({
   onSubmitApplication,
   onGoBack,
 }) => {
   const [loanAmount, setLoanAmount] = useState<string>("");
   const [duration, setDuration] = useState<string>("12");
-  const [monthlyIncome, setMonthlyIncome] = useState<string>("");
   const [isLoanBreakDown, setIsLoanBreakDown] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Get maxLoanEligible from localStorage (saved from personal details step)
   const maxLoanEligible = localStorage.getItem("maxLoanEligible");
   const maxLoanAmount = maxLoanEligible
     ? parseFloat(maxLoanEligible)
@@ -65,7 +103,8 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
     open: boolean;
     message: string;
     title?: string;
-  }>({ open: false, message: "", title: undefined });
+    isSuccess?: boolean;
+  }>({ open: false, message: "", title: undefined, isSuccess: false });
 
   const [breakdown, setBreakdown] = useState<{
     loanId: string;
@@ -76,41 +115,15 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
 
   const handleLoanAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    // Remove currency symbols and commas
     value = value.replace(/[₦,\s]/g, "");
-    // Remove any non-digit characters except decimal point
     value = value.replace(/[^0-9.]/g, "");
-
-    // Ensure only one decimal point
     const parts = value.split(".");
     if (parts.length > 2) {
       value = parts[0] + "." + parts.slice(1).join("");
     }
-
     const numValue = parseFloat(value || "0");
     if (!value || (numValue >= 0 && numValue <= 100000000)) {
       setLoanAmount(value);
-    }
-  };
-
-  const handleMonthlyIncomeChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    let value = e.target.value;
-    // Remove currency symbols and commas
-    value = value.replace(/[₦,\s]/g, "");
-    // Remove any non-digit characters except decimal point
-    value = value.replace(/[^0-9.]/g, "");
-
-    // Ensure only one decimal point
-    const parts = value.split(".");
-    if (parts.length > 2) {
-      value = parts[0] + "." + parts.slice(1).join("");
-    }
-
-    const numValue = parseFloat(value || "0");
-    if (!value || numValue >= 0) {
-      setMonthlyIncome(value);
     }
   };
 
@@ -129,34 +142,22 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
         open: true,
         message: "Please fill in all fields.",
         title: "Missing Fields",
+        isSuccess: false,
       });
       return;
     }
-    console.log("requested loan amount:", {
-      loanAmount: Number(loanAmount),
-      tenor: Number(duration),
-      loanId: loanId || "",
-    });
     try {
       const response = await submitLoan({
         loanAmount: Number(loanAmount),
         tenor: Number(duration),
         loanId: loanId || "",
       }).unwrap();
-      console.log("Loan submission response:", response);
       if (!response.success) {
         setModal({
           open: true,
           message: response?.message || "Error submitting application.",
           title: "Submission Failed",
-        });
-        return;
-      }
-      if (isLoading) {
-        setModal({
-          open: true,
-          message: "Submitting your application, please wait...",
-          title: "Please Wait",
+          isSuccess: false,
         });
         return;
       }
@@ -172,223 +173,449 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
           open: true,
           message: response.message || "Application submitted successfully!",
           title: "Success",
+          isSuccess: true,
         });
       }
     } catch (error: any) {
-      console.error("Error loan application:", error);
       setModal({
         open: true,
         message: error?.message || "An error occurred. Please try again.",
         title: "Submission Error",
+        isSuccess: false,
       });
     }
-    // if (onSubmitApplication) {
-    //   onSubmitApplication(
-    //     parseFloat(loanAmount),
-    //     parseInt(duration),
-    //     parseFloat(monthlyIncome)
-    //   );
-    // }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-left-panel">
-        <div className="logo-container">
-          <h1 className="logo-text">deVpay</h1>
-        </div>
-        <div className="illustration-container">
-          <img src={peopleBg} alt="Business People" className="illustration" />
-        </div>
-      </div>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Animated Background */}
+      <AnimatedBackground variant="dark" />
 
-      <div className="login-right-panel">
-        <div className="back-button-container">
-          <button className="back-button" onClick={onGoBack}>
-            <span className="back-icon">‹</span>
-            <span>Go Back</span>
-          </button>
-        </div>
+      {/* Left Panel - Hero Section */}
+      <Box
+        sx={{
+          flex: 1,
+          display: { xs: "none", lg: "flex" },
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 6,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <Box
+          sx={{
+            maxWidth: "480px",
+            animation: `${fadeInUp} 0.8s ease-out`,
+          }}
+        >
+          {/* Icon */}
+          <Box
+            sx={{
+              width: 90,
+              height: 90,
+              borderRadius: "24px",
+              background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 4,
+              boxShadow: "0 20px 60px rgba(0, 168, 89, 0.4)",
+              animation: `${pulse} 3s ease-in-out infinite`,
+            }}
+          >
+            <AccountBalanceWalletIcon sx={{ fontSize: 45, color: "white" }} />
+          </Box>
 
-        <div className="login-form-container">
-          <ProgressBar currentStep={4} />
-          <div className="login-header">
-            <h1>Loan Form</h1>
-            <p>Please provide your desired loan amount and income details.</p>
-          </div>
+          {/* Title */}
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 800,
+              color: "white",
+              mb: 2,
+              fontSize: { lg: "3rem", xl: "3.5rem" },
+              lineHeight: 1.2,
+            }}
+          >
+            Choose Your
+            <Box
+              component="span"
+              sx={{
+                display: "block",
+                background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Loan Amount
+            </Box>
+          </Typography>
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="form-group">
-              <TextField
-                fullWidth
-                label="Loan Amount"
-                value={formatDisplay(loanAmount)}
-                onChange={handleLoanAmountChange}
-                required
-                placeholder="Enter amount in Naira"
-                type="text"
+          <Typography
+            sx={{
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "1.2rem",
+              mb: 5,
+              lineHeight: 1.7,
+            }}
+          >
+            Select the amount you need and your preferred repayment duration.
+            Our calculator will show you the exact monthly payments.
+          </Typography>
+
+          {/* Feature Cards */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {features.map((feature, idx) => (
+              <Box
+                key={idx}
                 sx={{
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    height: "48px",
-                    "& fieldset": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover fieldset": {
-                      borderColor: "#e0e0e0",
-                    },
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  p: 2.5,
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.05)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  transition: "all 0.3s ease",
+                  animation: `${fadeInUp} 0.8s ease-out ${0.2 + idx * 0.1}s both`,
+                  "&:hover": {
+                    background: "rgba(0, 168, 89, 0.1)",
+                    border: "1px solid rgba(0, 168, 89, 0.3)",
+                    transform: "translateX(8px)",
                   },
-                  "& .MuiInputLabel-root": {
-                    color: "#666",
-                  },
-                }}
-              />
-              {loanAmount && parseFloat(loanAmount) < 10000 && (
-                <div className="error-text">Minimum amount is ₦1,000</div>
-              )}
-              {loanAmount && parseFloat(loanAmount) > maxLoanAmount && (
-                <div className="error-text">
-                  Maximum loan amount is{" "}
-                  {formatCurrency(maxLoanAmount.toString())}
-                </div>
-              )}
-              <p
-                className="info-text"
-                style={{
-                  color: "#666",
-                  fontSize: "14px",
-                  marginTop: "8px",
-                  fontStyle: "italic",
                 }}
               >
-                Based on your credit score review, the maximum amount you're
-                eligible for is {formatCurrency(maxLoanAmount.toString())}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <FormControl fullWidth>
-                <InputLabel id="duration-select-label">Duration</InputLabel>
-                <Select
-                  labelId="duration-select-label"
-                  id="duration-select"
-                  value={duration}
-                  label="Duration"
-                  onChange={(e) => setDuration(e.target.value)}
-                  required
+                <Box
                   sx={{
-                    height: "48px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                      fontSize: "16px",
-                    },
-                  }}
-                  className="form-input"
-                >
-                  {DURATION_OPTIONS.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                      {option.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-
-            {/* <div className="form-group">
-              <TextField
-                fullWidth
-                label="Monthly Income"
-                value={formatDisplay(monthlyIncome)}
-                onChange={handleMonthlyIncomeChange}
-                required
-                placeholder="Enter your monthly income"
-                type="text"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    height: "48px",
-                    "& fieldset": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover fieldset": {
-                      borderColor: "#e0e0e0",
-                    },
-                  },
-                  "& .MuiInputLabel-root": {
-                    color: "#666",
-                  },
-                }}
-              />
-              {monthlyIncome && parseFloat(monthlyIncome) < 0 && (
-                <div className="error-text">
-                  Monthly income cannot be negative
-                </div>
-              )}
-            </div> */}
-
-            <div className="form-group">
-              {isLoading ? (
-                <button
-                  type="submit"
-                  className="login-button"
-                  disabled
-                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: "14px",
+                    background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 8,
+                    color: "white",
+                    flexShrink: 0,
                   }}
                 >
-                  <Spinner size={22} />
-                </button>
-              ) : (
-                <button type="submit" className="login-button">
-                  Submit Application
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
-      <Modal
+                  {feature.icon}
+                </Box>
+                <Box>
+                  <Typography
+                    sx={{
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                      mb: 0.3,
+                    }}
+                  >
+                    {feature.title}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: "rgba(255,255,255,0.6)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {feature.description}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Right Panel - Form */}
+      <Box
+        sx={{
+          flex: { xs: 1, lg: "0 0 560px" },
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          zIndex: 1,
+          background: { xs: "transparent", lg: "rgba(255,255,255,0.02)" },
+        }}
+      >
+        <Container
+          maxWidth="sm"
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            py: 4,
+            px: { xs: 2, sm: 4 },
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 4,
+              animation: `${fadeInUp} 0.6s ease-out`,
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "16px",
+                background: "white",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              }}
+            >
+              <img
+                src={Logo}
+                alt="Logo"
+                style={{ width: "100px", height: "auto", borderRadius: "8px" }}
+              />
+            </Box>
+            <ModernButton
+              variant="outline"
+              startIcon={<ArrowBackIcon />}
+              onClick={onGoBack}
+              sx={{
+                borderColor: "rgba(255,255,255,0.3)",
+                color: "white",
+                "&:hover": {
+                  borderColor: "#00A859",
+                  background: "rgba(0, 168, 89, 0.1)",
+                  color: "#00A859",
+                },
+              }}
+            >
+              Back
+            </ModernButton>
+          </Box>
+
+          {/* Form Card */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <GlassCard
+              variant="elevated"
+              sx={{
+                p: { xs: 3, sm: 4 },
+                animation: `${fadeInUp} 0.8s ease-out 0.2s both`,
+              }}
+            >
+              {/* Progress Bar */}
+              <Box sx={{ mb: 3 }}>
+                <ModernProgressBar
+                  steps={4}
+                  currentStep={4}
+                  stepLabels={["Apply", "Bank Link", "Details", "Loan"]}
+                />
+              </Box>
+
+              {/* Step Label */}
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                <Chip
+                  label="Final Step"
+                  icon={<CalculateIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    px: 2,
+                    py: 2.5,
+                    "& .MuiChip-icon": {
+                      color: "white",
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Title */}
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  color: "#1a1a2e",
+                  mb: 1,
+                  textAlign: "center",
+                }}
+              >
+                Loan Details
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#64748b",
+                  mb: 4,
+                  textAlign: "center",
+                  fontSize: "1rem",
+                }}
+              >
+                Enter your desired loan amount and duration
+              </Typography>
+
+              {/* Form */}
+              <Box component="form" onSubmit={handleSubmit}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {/* Loan Amount Input */}
+                  <Box>
+                    <ModernInput
+                      label="Loan Amount"
+                      value={formatDisplay(loanAmount)}
+                      onChange={handleLoanAmountChange}
+                      required
+                      placeholder="Enter amount in Naira"
+                      startIcon={<AttachMoneyIcon />}
+                    />
+                    {loanAmount && parseFloat(loanAmount) < 10000 && (
+                      <Typography
+                        sx={{
+                          color: "#ef4444",
+                          fontSize: "0.75rem",
+                          mt: 1,
+                          pl: 1,
+                        }}
+                      >
+                        Minimum amount is ₦10,000
+                      </Typography>
+                    )}
+                    {loanAmount && parseFloat(loanAmount) > maxLoanAmount && (
+                      <Typography
+                        sx={{
+                          color: "#ef4444",
+                          fontSize: "0.75rem",
+                          mt: 1,
+                          pl: 1,
+                        }}
+                      >
+                        Maximum loan amount is{" "}
+                        {formatCurrency(maxLoanAmount.toString())}
+                      </Typography>
+                    )}
+                    
+                    {/* Eligibility Info Box */}
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        borderRadius: "12px",
+                        background: "linear-gradient(135deg, rgba(0,168,89,0.08) 0%, rgba(0,201,106,0.05) 100%)",
+                        border: "1px solid rgba(0,168,89,0.2)",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          color: "#00A859",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <CheckCircleOutlineIcon sx={{ fontSize: 18 }} />
+                        Maximum eligible: {formatCurrency(maxLoanAmount.toString())}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Duration Select */}
+                  <ModernSelect
+                    label="Loan Duration"
+                    value={duration}
+                    onChange={(value) => setDuration(value)}
+                    options={DURATION_OPTIONS}
+                    icon={<AccessTimeIcon />}
+                  />
+
+                  {/* Submit Button */}
+                  <Box sx={{ mt: 2 }}>
+                    <ModernButton
+                      type="submit"
+                      variant="primary"
+                      fullWidth
+                      disabled={isLoading}
+                      glow
+                      startIcon={!isLoading ? <SendIcon /> : undefined}
+                      sx={{
+                        height: 56,
+                        fontSize: "1.1rem",
+                        fontWeight: 600,
+                        borderRadius: "100px",
+                      }}
+                    >
+                      {isLoading ? (
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <ModernSpinner size={24} />
+                          <span>Processing...</span>
+                        </Box>
+                      ) : (
+                        "Submit Application"
+                      )}
+                    </ModernButton>
+                  </Box>
+
+                  {/* Security Note */}
+                  <Typography
+                    sx={{
+                      color: "#94a3b8",
+                      fontSize: "0.8rem",
+                      textAlign: "center",
+                      mt: 1,
+                    }}
+                  >
+                    🔒 Your information is secured with bank-grade encryption
+                  </Typography>
+                </Box>
+              </Box>
+            </GlassCard>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Modal */}
+      <ModernModal
         open={modal.open}
         onClose={() => setModal({ ...modal, open: false })}
         title={modal.title}
-        actions={
-          <button
-            className="login-button"
-            onClick={() => {
-              if (isLoanBreakDown) {
-                navigate("/confirmation", {
-                  state: {
-                    loanAmount: breakdown?.repaymentAmount || 0,
-                    loanTenure: breakdown?.tenor || 0,
-                    monthlyIncome: breakdown?.monthlyRepaymentAmount || 0,
-                    loanId: breakdown?.loanId || "",
-                  },
-                });
-              } else {
-                setModal({ ...modal, open: false });
-              }
-            }}
-          >
-            Close
-          </button>
-        }
+        type={modal.isSuccess ? "success" : "error"}
+        primaryAction={{
+          label: isLoanBreakDown ? "View Breakdown" : "Close",
+          onClick: () => {
+            if (isLoanBreakDown) {
+              navigate("/confirmation", {
+                state: {
+                  loanAmount: breakdown?.repaymentAmount || 0,
+                  loanTenure: breakdown?.tenor || 0,
+                  monthlyIncome: breakdown?.monthlyRepaymentAmount || 0,
+                  loanId: breakdown?.loanId || "",
+                },
+              });
+            } else {
+              setModal({ ...modal, open: false });
+            }
+          },
+        }}
       >
-        {modal.message}
-      </Modal>
-    </div>
+        <Typography sx={{ color: "#64748b", textAlign: "center" }}>
+          {modal.message}
+        </Typography>
+      </ModernModal>
+    </Box>
   );
 };
 

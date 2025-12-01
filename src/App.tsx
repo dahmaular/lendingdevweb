@@ -3,29 +3,59 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Link,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import { AppBar } from "@mui/material";
 import "./App.css";
-import { ConfirmationPage } from "./components/ConfirmationPage";
+import ConfirmationPage from "./components/ConfirmationPage";
 import LoginPage from "./pages/apply";
 import StatementReview from "./components/StatementReview";
 import LoanApplicationPage from "./pages/loanApplication";
 import PersonalDetails from "./pages/personalDetails";
 
+// Wrapper for ConfirmationPage to handle route state
+const ConfirmationPageWrapper = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const formData = location.state?.formData || {
+    employer_id: "",
+    employer_name: "",
+    email: "",
+    salary: 0,
+    bank_name: "",
+    account_name: "",
+    account_number: "",
+    bvn: "",
+    phone_number: "",
+    first_name: "",
+    last_name: "",
+    middle_name: "",
+    nin: "",
+    lga: "",
+    home_address: "",
+    state: "",
+    date_of_birth: "",
+    sex: "",
+    loan_amount: 0,
+    loan_duration: 0,
+  };
+
+  return (
+    <ConfirmationPage
+      formData={formData}
+      onBack={() => navigate("/loan-application")}
+      onSubmitSuccess={(reference) => {
+        console.log("Application submitted with reference:", reference);
+        navigate("/");
+      }}
+    />
+  );
+};
+
 // Wrapper component to use hooks
 const AppContent = () => {
   const navigate = useNavigate();
-
-  const handleLogin = (email: string, bvn: string, dob: string) => {
-    // In a real app, you'd validate the credit score here
-    navigate("/statement-review");
-  };
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
 
   const handleLoanApplication = (
     loanAmount: number,
@@ -59,17 +89,7 @@ const AppContent = () => {
         </Toolbar> */}
       </AppBar>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <LoginPage
-              onLogin={handleLogin}
-              onGoBack={handleGoBack}
-              onCreateAccount={() => {}}
-              onResetPassword={() => {}}
-            />
-          }
-        />
+        <Route path="/" element={<LoginPage />} />
         <Route
           path="/statement-review"
           element={
@@ -97,7 +117,7 @@ const AppContent = () => {
             />
           }
         />
-        <Route path="/confirmation" element={<ConfirmationPage />} />
+        <Route path="/confirmation" element={<ConfirmationPageWrapper />} />
       </Routes>
     </div>
   );
