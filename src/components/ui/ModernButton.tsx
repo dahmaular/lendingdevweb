@@ -12,7 +12,14 @@ const shimmer = keyframes`
 `;
 
 interface ModernButtonProps extends Omit<MuiButtonProps, "variant"> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "gradient" | "dark" | "success";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "gradient"
+    | "dark"
+    | "success";
   loading?: boolean;
   icon?: React.ReactNode;
   iconPosition?: "start" | "end";
@@ -22,7 +29,9 @@ interface ModernButtonProps extends Omit<MuiButtonProps, "variant"> {
 
 const StyledButton = styled(MuiButton, {
   shouldForwardProp: (prop) =>
-    !["loading", "icon", "iconPosition", "glow", "pill", "variant"].includes(prop as string),
+    !["loading", "icon", "iconPosition", "glow", "pill", "variant"].includes(
+      prop as string
+    ),
 })<ModernButtonProps>(({ variant = "primary", glow = false, pill = true }) => ({
   borderRadius: pill ? 100 : 16,
   padding: "14px 32px",
@@ -41,7 +50,8 @@ const StyledButton = styled(MuiButton, {
     left: 0,
     width: "100%",
     height: "100%",
-    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+    background:
+      "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
     transform: "translateX(-100%)",
   },
 
@@ -158,8 +168,12 @@ const ModernButton: React.FC<ModernButtonProps> = ({
   endIcon,
   ...props
 }) => {
-  const effectiveStartIcon = loading ? null : startIcon || (iconPosition === "start" ? icon : null);
-  const effectiveEndIcon = loading ? null : endIcon || (iconPosition === "end" ? icon : null);
+  const effectiveStartIcon = loading
+    ? null
+    : startIcon || (iconPosition === "start" ? icon : null);
+  const effectiveEndIcon = loading
+    ? null
+    : endIcon || (iconPosition === "end" ? icon : null);
 
   return (
     <StyledButton
@@ -176,7 +190,10 @@ const ModernButton: React.FC<ModernButtonProps> = ({
           <CircularProgress
             size={20}
             sx={{
-              color: variant === "outline" || variant === "ghost" ? "#00A859" : "inherit",
+              color:
+                variant === "outline" || variant === "ghost"
+                  ? "#00A859"
+                  : "inherit",
               marginRight: 1,
             }}
           />

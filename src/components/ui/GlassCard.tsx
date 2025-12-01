@@ -20,7 +20,13 @@ const StyledGlassCard = styled(Box, {
   shouldForwardProp: (prop) =>
     !["variant", "blur", "hover", "glow", "animate"].includes(prop as string),
 })<GlassCardProps>(
-  ({ variant = "light", blur = 20, hover = true, glow = false, animate = false }) => ({
+  ({
+    variant = "light",
+    blur = 20,
+    hover = true,
+    glow = false,
+    animate = false,
+  }) => ({
     borderRadius: 24,
     padding: "32px",
     backdropFilter: `blur(${blur}px)`,
@@ -37,7 +43,8 @@ const StyledGlassCard = styled(Box, {
     ...(variant === "light" && {
       background: "rgba(255, 255, 255, 0.95)",
       borderColor: "rgba(0, 0, 0, 0.06)",
-      boxShadow: "0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
+      boxShadow:
+        "0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
       ...(glow && {
         boxShadow:
           "0 4px 24px rgba(0, 0, 0, 0.06), 0 0 60px rgba(0, 168, 89, 0.08)",
@@ -86,7 +93,8 @@ const StyledGlassCard = styled(Box, {
         left: 0,
         right: 0,
         height: "4px",
-        background: "linear-gradient(90deg, #00A859 0%, #00C96A 50%, #2DD47E 100%)",
+        background:
+          "linear-gradient(90deg, #00A859 0%, #00C96A 50%, #2DD47E 100%)",
         borderRadius: "24px 24px 0 0",
       },
     }),
