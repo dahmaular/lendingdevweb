@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Container, Chip, keyframes } from "@mui/material";
+import { Box, Typography, keyframes } from "@mui/material";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -7,8 +7,6 @@ import SendIcon from "@mui/icons-material/Send";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SpeedIcon from "@mui/icons-material/Speed";
-import CalculateIcon from "@mui/icons-material/Calculate";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useSubmitLoanMutation } from "../store/services/baseApi";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/logo.jpeg";
@@ -20,24 +18,22 @@ import {
   ModernModal,
   ModernSpinner,
   ModernSelect,
-  AnimatedBackground,
 } from "../components/ui";
 
-// Animations
-const fadeInUp = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+const gradientAnimation = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 `;
 
-const pulse = keyframes`
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+const floatAnimation = keyframes`
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+`;
+
+const pulseAnimation = keyframes`
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 `;
 
 interface LoginPageProps {
@@ -64,25 +60,6 @@ const formatCurrency = (value: string): string => {
     maximumFractionDigits: 0,
   }).format(number);
 };
-
-// Feature items for left panel
-const features = [
-  {
-    icon: <SpeedIcon sx={{ fontSize: 24 }} />,
-    title: "Instant Calculation",
-    description: "Get real-time loan breakdown",
-  },
-  {
-    icon: <TrendingUpIcon sx={{ fontSize: 24 }} />,
-    title: "Flexible Terms",
-    description: "Choose your preferred duration",
-  },
-  {
-    icon: <CheckCircleOutlineIcon sx={{ fontSize: 24 }} />,
-    title: "Quick Approval",
-    description: "Fast decision on your application",
-  },
-];
 
 const LoanApplicationPage: React.FC<LoginPageProps> = ({
   onSubmitApplication,
@@ -191,400 +168,334 @@ const LoanApplicationPage: React.FC<LoginPageProps> = ({
       sx={{
         minHeight: "100vh",
         display: "flex",
+        background:
+          "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
+        backgroundSize: "400% 400%",
+        animation: `${gradientAnimation} 15s ease infinite`,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Animated Background */}
-      <AnimatedBackground variant="dark" />
+      {/* Animated background elements */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "10%",
+          left: "5%",
+          width: "300px",
+          height: "300px",
+          borderRadius: "50%",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+          animation: `${floatAnimation} 6s ease-in-out infinite`,
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "20%",
+          right: "10%",
+          width: "200px",
+          height: "200px",
+          borderRadius: "50%",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+          animation: `${floatAnimation} 8s ease-in-out infinite reverse`,
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)",
+          animation: `${pulseAnimation} 4s ease-in-out infinite`,
+          transform: "translate(-50%, -50%)",
+        }}
+      />
 
-      {/* Left Panel - Hero Section */}
+      {/* Left Panel - Branding */}
       <Box
         sx={{
           flex: 1,
-          display: { xs: "none", lg: "flex" },
+          display: { xs: "none", md: "flex" },
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          p: 6,
+          p: 4,
           position: "relative",
           zIndex: 1,
         }}
       >
-        <Box
+        <GlassCard
           sx={{
-            maxWidth: "480px",
-            animation: `${fadeInUp} 0.8s ease-out`,
+            p: 6,
+            textAlign: "center",
+            maxWidth: "500px",
+            backdropFilter: "blur(20px)",
           }}
         >
-          {/* Icon */}
           <Box
             sx={{
-              width: 90,
-              height: 90,
-              borderRadius: "24px",
-              background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              mb: 4,
-              boxShadow: "0 20px 60px rgba(0, 168, 89, 0.4)",
-              animation: `${pulse} 3s ease-in-out infinite`,
+              mx: "auto",
+              mb: 3,
+              boxShadow: "0 10px 40px rgba(102, 126, 234, 0.4)",
             }}
           >
-            <AccountBalanceWalletIcon sx={{ fontSize: 45, color: "white" }} />
+            <AccountBalanceWalletIcon sx={{ fontSize: 40, color: "white" }} />
           </Box>
-
-          {/* Title */}
           <Typography
-            variant="h2"
+            variant="h3"
             sx={{
               fontWeight: 800,
               color: "white",
               mb: 2,
-              fontSize: { lg: "3rem", xl: "3.5rem" },
-              lineHeight: 1.2,
+              textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
             }}
           >
-            Choose Your
-            <Box
-              component="span"
-              sx={{
-                display: "block",
-                background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Loan Amount
-            </Box>
+            Loan Application
           </Typography>
-
           <Typography
+            variant="h6"
             sx={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "1.2rem",
-              mb: 5,
-              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.9)",
+              mb: 4,
+              fontWeight: 300,
             }}
           >
-            Select the amount you need and your preferred repayment duration.
-            Our calculator will show you the exact monthly payments.
+            Get the funds you need
           </Typography>
-
-          {/* Feature Cards */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {features.map((feature, idx) => (
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              { icon: <SpeedIcon />, text: "Fast" },
+              { icon: <TrendingUpIcon />, text: "Flexible" },
+            ].map((item, idx) => (
               <Box
                 key={idx}
                 sx={{
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: "30px",
+                  background: "rgba(255,255,255,0.2)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.3)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 3,
-                  p: 2.5,
-                  borderRadius: "16px",
-                  background: "rgba(255,255,255,0.05)",
-                  backdropFilter: "blur(10px)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  transition: "all 0.3s ease",
-                  animation: `${fadeInUp} 0.8s ease-out ${0.2 + idx * 0.1}s both`,
-                  "&:hover": {
-                    background: "rgba(0, 168, 89, 0.1)",
-                    border: "1px solid rgba(0, 168, 89, 0.3)",
-                    transform: "translateX(8px)",
-                  },
+                  gap: 1,
                 }}
               >
-                <Box
-                  sx={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: "14px",
-                    background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    flexShrink: 0,
-                  }}
+                <Box sx={{ color: "white", display: "flex" }}>{item.icon}</Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "white", fontWeight: 500 }}
                 >
-                  {feature.icon}
-                </Box>
-                <Box>
-                  <Typography
-                    sx={{
-                      color: "white",
-                      fontWeight: 600,
-                      fontSize: "1rem",
-                      mb: 0.3,
-                    }}
-                  >
-                    {feature.title}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      color: "rgba(255,255,255,0.6)",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    {feature.description}
-                  </Typography>
-                </Box>
+                  {item.text}
+                </Typography>
               </Box>
             ))}
           </Box>
-        </Box>
+        </GlassCard>
       </Box>
 
       {/* Right Panel - Form */}
       <Box
         sx={{
-          flex: { xs: 1, lg: "0 0 560px" },
+          flex: 1,
           display: "flex",
           flexDirection: "column",
+          p: { xs: 2, md: 4 },
           position: "relative",
           zIndex: 1,
-          background: { xs: "transparent", lg: "rgba(255,255,255,0.02)" },
         }}
       >
-        <Container
-          maxWidth="sm"
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 4,
+          }}
+        >
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: "16px",
+              background: "rgba(255,255,255,0.9)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            }}
+          >
+            <img
+              src={Logo}
+              alt="Logo"
+              style={{ width: "120px", height: "auto", borderRadius: "8px" }}
+            />
+          </Box>
+          <ModernButton
+            variant="outline"
+            startIcon={<ArrowBackIcon />}
+            onClick={onGoBack}
+            sx={{
+              borderColor: "rgba(255,255,255,0.5)",
+              color: "white",
+              backdropFilter: "blur(10px)",
+              "&:hover": {
+                borderColor: "white",
+                background: "rgba(255,255,255,0.1)",
+              },
+            }}
+          >
+            Go Back
+          </ModernButton>
+        </Box>
+
+        {/* Form Card */}
+        <Box
           sx={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            py: 4,
-            px: { xs: 2, sm: 4 },
+            justifyContent: "center",
+            maxWidth: "500px",
+            width: "100%",
+            mx: "auto",
           }}
         >
-          {/* Header */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 4,
-              animation: `${fadeInUp} 0.6s ease-out`,
-            }}
-          >
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: "16px",
-                background: "white",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-              }}
-            >
-              <img
-                src={Logo}
-                alt="Logo"
-                style={{ width: "100px", height: "auto", borderRadius: "8px" }}
-              />
+          <GlassCard sx={{ p: { xs: 3, md: 4 } }}>
+            {/* Progress Bar */}
+            <Box sx={{ mb: 4 }}>
+              <ModernProgressBar currentStep={4} steps={4} />
             </Box>
-            <ModernButton
-              variant="outline"
-              startIcon={<ArrowBackIcon />}
-              onClick={onGoBack}
+
+            {/* Title */}
+            <Typography
+              variant="h4"
               sx={{
-                borderColor: "rgba(255,255,255,0.3)",
-                color: "white",
-                "&:hover": {
-                  borderColor: "#00A859",
-                  background: "rgba(0, 168, 89, 0.1)",
-                  color: "#00A859",
-                },
+                fontWeight: 700,
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                mb: 1,
               }}
             >
-              Back
-            </ModernButton>
-          </Box>
-
-          {/* Form Card */}
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <GlassCard
-              variant="elevated"
+              Loan Details
+            </Typography>
+            <Typography
               sx={{
-                p: { xs: 3, sm: 4 },
-                animation: `${fadeInUp} 0.8s ease-out 0.2s both`,
+                color: "#64748b",
+                mb: 4,
+                fontSize: "1rem",
               }}
             >
-              {/* Progress Bar */}
-              <Box sx={{ mb: 3 }}>
-                <ModernProgressBar
-                  steps={4}
-                  currentStep={4}
-                  stepLabels={["Apply", "Bank Link", "Details", "Loan"]}
-                />
-              </Box>
+              Enter your desired loan amount and duration
+            </Typography>
 
-              {/* Step Label */}
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-                <Chip
-                  label="Final Step"
-                  icon={<CalculateIcon sx={{ fontSize: 16 }} />}
-                  sx={{
-                    background: "linear-gradient(135deg, #00A859 0%, #00C96A 100%)",
-                    color: "white",
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    px: 2,
-                    py: 2.5,
-                    "& .MuiChip-icon": {
-                      color: "white",
-                    },
-                  }}
-                />
-              </Box>
-
-              {/* Title */}
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  color: "#1a1a2e",
-                  mb: 1,
-                  textAlign: "center",
-                }}
-              >
-                Loan Details
-              </Typography>
-              <Typography
-                sx={{
-                  color: "#64748b",
-                  mb: 4,
-                  textAlign: "center",
-                  fontSize: "1rem",
-                }}
-              >
-                Enter your desired loan amount and duration
-              </Typography>
-
-              {/* Form */}
-              <Box component="form" onSubmit={handleSubmit}>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  {/* Loan Amount Input */}
-                  <Box>
-                    <ModernInput
-                      label="Loan Amount"
-                      value={formatDisplay(loanAmount)}
-                      onChange={handleLoanAmountChange}
-                      required
-                      placeholder="Enter amount in Naira"
-                      startIcon={<AttachMoneyIcon />}
-                    />
-                    {loanAmount && parseFloat(loanAmount) < 10000 && (
-                      <Typography
-                        sx={{
-                          color: "#ef4444",
-                          fontSize: "0.75rem",
-                          mt: 1,
-                          pl: 1,
-                        }}
-                      >
-                        Minimum amount is ₦10,000
-                      </Typography>
-                    )}
-                    {loanAmount && parseFloat(loanAmount) > maxLoanAmount && (
-                      <Typography
-                        sx={{
-                          color: "#ef4444",
-                          fontSize: "0.75rem",
-                          mt: 1,
-                          pl: 1,
-                        }}
-                      >
-                        Maximum loan amount is{" "}
-                        {formatCurrency(maxLoanAmount.toString())}
-                      </Typography>
-                    )}
-                    
-                    {/* Eligibility Info Box */}
-                    <Box
-                      sx={{
-                        mt: 2,
-                        p: 2,
-                        borderRadius: "12px",
-                        background: "linear-gradient(135deg, rgba(0,168,89,0.08) 0%, rgba(0,201,106,0.05) 100%)",
-                        border: "1px solid rgba(0,168,89,0.2)",
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          color: "#00A859",
-                          fontSize: "0.85rem",
-                          fontWeight: 500,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <CheckCircleOutlineIcon sx={{ fontSize: 18 }} />
-                        Maximum eligible: {formatCurrency(maxLoanAmount.toString())}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Duration Select */}
-                  <ModernSelect
-                    label="Loan Duration"
-                    value={duration}
-                    onChange={(value) => setDuration(value)}
-                    options={DURATION_OPTIONS}
-                    icon={<AccessTimeIcon />}
+            {/* Form */}
+            <Box component="form" onSubmit={handleSubmit}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Box>
+                  <ModernInput
+                    label="Loan Amount"
+                    value={formatDisplay(loanAmount)}
+                    onChange={handleLoanAmountChange}
+                    required
+                    placeholder="Enter amount in Naira"
+                    startIcon={<AttachMoneyIcon />}
                   />
-
-                  {/* Submit Button */}
-                  <Box sx={{ mt: 2 }}>
-                    <ModernButton
-                      type="submit"
-                      variant="primary"
-                      fullWidth
-                      disabled={isLoading}
-                      glow
-                      startIcon={!isLoading ? <SendIcon /> : undefined}
+                  {loanAmount && parseFloat(loanAmount) < 10000 && (
+                    <Typography
                       sx={{
-                        height: 56,
-                        fontSize: "1.1rem",
-                        fontWeight: 600,
-                        borderRadius: "100px",
+                        color: "#ef4444",
+                        fontSize: "0.75rem",
+                        mt: 1,
+                        pl: 1,
                       }}
                     >
-                      {isLoading ? (
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
-                          <ModernSpinner size={24} />
-                          <span>Processing...</span>
-                        </Box>
-                      ) : (
-                        "Submit Application"
-                      )}
-                    </ModernButton>
-                  </Box>
-
-                  {/* Security Note */}
+                      Minimum amount is ₦10,000
+                    </Typography>
+                  )}
+                  {loanAmount && parseFloat(loanAmount) > maxLoanAmount && (
+                    <Typography
+                      sx={{
+                        color: "#ef4444",
+                        fontSize: "0.75rem",
+                        mt: 1,
+                        pl: 1,
+                      }}
+                    >
+                      Maximum loan amount is{" "}
+                      {formatCurrency(maxLoanAmount.toString())}
+                    </Typography>
+                  )}
                   <Typography
                     sx={{
-                      color: "#94a3b8",
-                      fontSize: "0.8rem",
-                      textAlign: "center",
+                      color: "#64748b",
+                      fontSize: "0.75rem",
                       mt: 1,
+                      pl: 1,
+                      fontStyle: "italic",
                     }}
                   >
-                    🔒 Your information is secured with bank-grade encryption
+                    Based on your credit score, the maximum you're eligible for
+                    is {formatCurrency(maxLoanAmount.toString())}
                   </Typography>
                 </Box>
+
+                <ModernSelect
+                  label="Loan Duration"
+                  value={duration}
+                  onChange={(value) => setDuration(value)}
+                  options={DURATION_OPTIONS}
+                  icon={<AccessTimeIcon />}
+                />
+
+                {/* Submit Button */}
+                <Box sx={{ mt: 2 }}>
+                  <ModernButton
+                    type="submit"
+                    fullWidth
+                    disabled={isLoading}
+                    startIcon={!isLoading ? <SendIcon /> : undefined}
+                    sx={{
+                      height: 56,
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {isLoading ? (
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                      >
+                        <ModernSpinner size="sm" />
+                        <span>Processing...</span>
+                      </Box>
+                    ) : (
+                      "Submit Application"
+                    )}
+                  </ModernButton>
+                </Box>
               </Box>
-            </GlassCard>
-          </Box>
-        </Container>
+            </Box>
+          </GlassCard>
+        </Box>
       </Box>
 
       {/* Modal */}

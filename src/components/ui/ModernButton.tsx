@@ -11,11 +11,6 @@ const shimmer = keyframes`
   100% { transform: translateX(100%); }
 `;
 
-const pulse = keyframes`
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-`;
-
 interface ModernButtonProps extends Omit<MuiButtonProps, "variant"> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "gradient" | "dark" | "success";
   loading?: boolean;
@@ -27,7 +22,7 @@ interface ModernButtonProps extends Omit<MuiButtonProps, "variant"> {
 
 const StyledButton = styled(MuiButton, {
   shouldForwardProp: (prop) =>
-    !["loading", "icon", "iconPosition", "glow", "pill"].includes(prop as string),
+    !["loading", "icon", "iconPosition", "glow", "pill", "variant"].includes(prop as string),
 })<ModernButtonProps>(({ variant = "primary", glow = false, pill = true }) => ({
   borderRadius: pill ? 100 : 16,
   padding: "14px 32px",
@@ -168,7 +163,7 @@ const ModernButton: React.FC<ModernButtonProps> = ({
 
   return (
     <StyledButton
-      variant={variant}
+      variant={variant as never}
       glow={glow}
       pill={pill}
       disabled={disabled || loading}

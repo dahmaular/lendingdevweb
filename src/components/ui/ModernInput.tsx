@@ -1,5 +1,5 @@
 import React from "react";
-import { TextField, TextFieldProps, InputAdornment, Box } from "@mui/material";
+import { TextField, TextFieldProps, InputAdornment } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
 export interface ModernInputProps extends Omit<TextFieldProps, "variant"> {

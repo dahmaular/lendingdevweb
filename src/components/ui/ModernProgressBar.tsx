@@ -76,7 +76,8 @@ const ProgressFill = styled(Box, {
 }));
 
 const StepIndicator = styled(Box, {
-  shouldForwardProp: (prop) => !["active", "completed"].includes(prop as string),
+  shouldForwardProp: (prop) =>
+    !["active", "completed"].includes(prop as string),
 })<{ active?: boolean; completed?: boolean }>(({ active, completed }) => ({
   width: 36,
   height: 36,

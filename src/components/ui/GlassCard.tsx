@@ -2,11 +2,6 @@ import React from "react";
 import { Box, BoxProps } from "@mui/material";
 import { styled, keyframes } from "@mui/material/styles";
 
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-`;
-
 const float = keyframes`
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
