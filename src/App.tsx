@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button } from "@mui/material";
 import "./App.css";
-import { ConfirmationPage } from "./components/ConfirmationPage";
+import ConfirmationPage from "./components/ConfirmationPage";
 import LoginPage from "./pages/apply";
 import StatementReview from "./components/StatementReview";
 import LoanApplicationPage from "./pages/loanApplication";
@@ -25,20 +25,6 @@ const AppContent = () => {
 
   const handleGoBack = () => {
     navigate(-1);
-  };
-
-  const handleLoanApplication = (
-    loanAmount: number,
-    duration: number,
-    monthlyIncome: number
-  ) => {
-    navigate("/confirmation", {
-      state: {
-        loanAmount,
-        loanTenure: duration,
-        monthlyIncome,
-      },
-    });
   };
 
   return (
@@ -79,24 +65,8 @@ const AppContent = () => {
             />
           }
         />
-        <Route
-          path="/personal-details"
-          element={
-            <PersonalDetails
-              onGoBack={() => navigate("/statement-review")}
-              onSubmitApplication={() => navigate("/loan-application")}
-            />
-          }
-        />
-        <Route
-          path="/loan-application"
-          element={
-            <LoanApplicationPage
-              onSubmitApplication={handleLoanApplication}
-              onGoBack={() => navigate("/personal-details")}
-            />
-          }
-        />
+        <Route path="/personal-details" element={<PersonalDetails />} />
+        <Route path="/loan-application" element={<LoanApplicationPage />} />
         <Route path="/confirmation" element={<ConfirmationPage />} />
       </Routes>
     </div>
