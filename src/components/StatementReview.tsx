@@ -1,23 +1,32 @@
-import React, { useState } from "react";
-import "../pages/login.css";
-import peopleBg from "../assets/people.svg";
-import ProgressBar from "./ProgressBar";
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Building2,
+  CreditCard,
+  Hash,
+  KeyRound,
+  ArrowRight,
+  ArrowLeft,
+  RefreshCw,
+  Sparkles,
+  Shield,
+  ChevronDown,
+  Search,
+  Check,
+  X,
+  Loader2,
+  Landmark,
+  User,
+} from "lucide-react";
 import {
   useResentBVNOtpMutation,
   useSalaryReviewMutation,
   useSalaryReviewOTPMutation,
   useVerifyResendBVNOtpMutation,
 } from "../store/services/baseApi";
-import Spinner from "./Spinner";
-import Modal from "./Modal";
+import Logo from "../assets/logo.jpeg";
+import { colors, shadows } from "../theme";
 
-interface StatementReviewProps {
-  onNext: () => void;
-  onBack: () => void;
-}
-
-// Nigerian banks list
 const NIGERIAN_BANKS = [
   { code: "044", name: "Access Bank" },
   { code: "023", name: "Citibank" },
@@ -39,22 +48,532 @@ const NIGERIAN_BANKS = [
   { code: "057", name: "Zenith Bank" },
 ];
 
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    background: `linear-gradient(135deg, ${colors.primary[50]} 0%, ${colors.neutral[50]} 50%, ${colors.secondary[50]} 100%)`,
+  } as React.CSSProperties,
+  card: {
+    background: "rgba(255, 255, 255, 0.95)",
+    backdropFilter: "blur(20px)",
+    borderRadius: "24px",
+    padding: "40px",
+    boxShadow: shadows.xl,
+    border: `1px solid ${colors.neutral[200]}`,
+  } as React.CSSProperties,
+  input: {
+    width: "100%",
+    padding: "14px 16px",
+    paddingLeft: "48px",
+    fontSize: "16px",
+    border: `2px solid ${colors.neutral[200]}`,
+    borderRadius: "12px",
+    outline: "none",
+    transition: "all 0.2s ease",
+    background: colors.neutral[50],
+    color: colors.neutral[900],
+    boxSizing: "border-box" as const,
+  } as React.CSSProperties,
+  inputFocused: {
+    borderColor: colors.primary[500],
+    boxShadow: `0 0 0 4px ${colors.primary[100]}`,
+    background: "#fff",
+  } as React.CSSProperties,
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    fontSize: "14px",
+    fontWeight: 600,
+    color: colors.neutral[700],
+  } as React.CSSProperties,
+  button: {
+    width: "100%",
+    padding: "16px 24px",
+    fontSize: "16px",
+    fontWeight: 600,
+    border: "none",
+    borderRadius: "12px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    transition: "all 0.2s ease",
+    background: `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.primary[600]} 100%)`,
+    color: "#fff",
+    boxShadow: shadows.md,
+  } as React.CSSProperties,
+  buttonDisabled: {
+    opacity: 0.7,
+    cursor: "not-allowed",
+  } as React.CSSProperties,
+};
+
+const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
+  const steps = [
+    { label: "Get Started", icon: User },
+    { label: "Statement Review", icon: Shield },
+    { label: "Personal Details", icon: Building2 },
+    { label: "Loan Application", icon: Sparkles },
+    { label: "Confirmation", icon: Check },
+  ];
+
+  return (
+    <div style={{ marginBottom: "32px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "24px",
+            right: "24px",
+            height: "3px",
+            background: colors.neutral[200],
+            borderRadius: "2px",
+            zIndex: 0,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "24px",
+            width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+            maxWidth: "calc(100% - 48px)",
+            height: "3px",
+            background: `linear-gradient(90deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
+            borderRadius: "2px",
+            zIndex: 1,
+            transition: "width 0.5s ease",
+          }}
+        />
+        {steps.map((step, index) => {
+          const isCompleted = currentStep > index + 1;
+          const isCurrent = currentStep === index + 1;
+          const Icon = step.icon;
+          return (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                zIndex: 2,
+              }}
+            >
+              <motion.div
+                initial={false}
+                animate={{
+                  scale: isCurrent ? 1.1 : 1,
+                  background:
+                    isCompleted || isCurrent
+                      ? `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`
+                      : colors.neutral[100],
+                }}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border:
+                    isCompleted || isCurrent
+                      ? "none"
+                      : `2px solid ${colors.neutral[300]}`,
+                  boxShadow: isCurrent ? shadows.glow : "none",
+                }}
+              >
+                {isCompleted ? (
+                  <Check size={20} color="#fff" />
+                ) : (
+                  <Icon
+                    size={18}
+                    color={isCurrent ? "#fff" : colors.neutral[400]}
+                  />
+                )}
+              </motion.div>
+              <span
+                style={{
+                  marginTop: "8px",
+                  fontSize: "11px",
+                  fontWeight: isCurrent ? 600 : 500,
+                  color: isCurrent ? colors.primary[600] : colors.neutral[500],
+                  textAlign: "center",
+                  maxWidth: "70px",
+                }}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+interface ModalProps {
+  open: boolean;
+  title?: string;
+  message: string;
+  onClose: () => void;
+  onAction?: () => void;
+  actionText?: string;
+}
+
+const ModernModal: React.FC<ModalProps> = ({
+  open,
+  title,
+  message,
+  onClose,
+  onAction,
+  actionText = "Ok, got it",
+}) => {
+  if (!open) return null;
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: "24px",
+              padding: "32px",
+              maxWidth: "400px",
+              width: "100%",
+              boxShadow: shadows.xl,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Sparkles size={24} color={colors.primary[600]} />
+              </div>
+              <button
+                onClick={onClose}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "8px",
+                }}
+              >
+                <X size={20} color={colors.neutral[400]} />
+              </button>
+            </div>
+            {title && (
+              <h3
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: colors.neutral[900],
+                  marginBottom: "8px",
+                }}
+              >
+                {title}
+              </h3>
+            )}
+            <p
+              style={{
+                fontSize: "15px",
+                color: colors.neutral[600],
+                lineHeight: 1.6,
+                marginBottom: "24px",
+              }}
+            >
+              {message}
+            </p>
+            <button
+              onClick={onAction || onClose}
+              style={{ ...styles.button, width: "100%" }}
+            >
+              {actionText}
+              <ArrowRight size={18} />
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const BankSelect: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredBanks = useMemo(() => {
+    if (!searchQuery) return NIGERIAN_BANKS;
+    return NIGERIAN_BANKS.filter((bank) =>
+      bank.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+  const selectedBank = NIGERIAN_BANKS.find((bank) => bank.code === value);
+
+  return (
+    <div style={{ marginBottom: "20px", position: "relative" }}>
+      <label style={styles.label}>Select Bank</label>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          ...styles.input,
+          paddingLeft: "48px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: isOpen ? "#fff" : colors.neutral[50],
+          borderColor: isOpen ? colors.primary[500] : colors.neutral[200],
+          boxShadow: isOpen ? `0 0 0 4px ${colors.primary[100]}` : "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <Landmark
+            size={20}
+            color={colors.neutral[400]}
+            style={{ position: "absolute", left: "16px" }}
+          />
+          <span
+            style={{
+              color: selectedBank ? colors.neutral[900] : colors.neutral[400],
+            }}
+          >
+            {selectedBank?.name || "Select your bank"}
+          </span>
+        </div>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+          <ChevronDown size={20} color={colors.neutral[400]} />
+        </motion.div>
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              marginTop: "8px",
+              background: "#fff",
+              borderRadius: "16px",
+              boxShadow: shadows.xl,
+              border: `1px solid ${colors.neutral[200]}`,
+              zIndex: 100,
+              overflow: "hidden",
+              maxHeight: "320px",
+            }}
+          >
+            <div
+              style={{
+                padding: "12px",
+                borderBottom: `1px solid ${colors.neutral[100]}`,
+              }}
+            >
+              <div style={{ position: "relative" }}>
+                <Search
+                  size={18}
+                  color={colors.neutral[400]}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search banks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px 10px 40px",
+                    fontSize: "14px",
+                    border: `1px solid ${colors.neutral[200]}`,
+                    borderRadius: "8px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div style={{ maxHeight: "240px", overflowY: "auto" }}>
+              {filteredBanks.map((bank) => (
+                <div
+                  key={bank.code}
+                  onClick={() => {
+                    onChange(bank.code);
+                    setIsOpen(false);
+                    setSearchQuery("");
+                  }}
+                  style={{
+                    padding: "12px 16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background:
+                      value === bank.code ? colors.primary[50] : "transparent",
+                    borderLeft:
+                      value === bank.code
+                        ? `3px solid ${colors.primary[500]}`
+                        : "3px solid transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (value !== bank.code)
+                      e.currentTarget.style.background = colors.neutral[50];
+                  }}
+                  onMouseLeave={(e) => {
+                    if (value !== bank.code)
+                      e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <span
+                    style={{ fontSize: "14px", color: colors.neutral[800] }}
+                  >
+                    {bank.name}
+                  </span>
+                  {value === bank.code && (
+                    <Check size={16} color={colors.primary[500]} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {isOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 99 }}
+          onClick={() => {
+            setIsOpen(false);
+            setSearchQuery("");
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const ModernInput: React.FC<{
+  label: string;
+  type: string;
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  icon: React.ReactNode;
+  maxLength?: number;
+  required?: boolean;
+  inputMode?: "text" | "numeric" | "tel";
+}> = ({
+  label,
+  type,
+  placeholder,
+  value,
+  onChange,
+  icon,
+  maxLength,
+  required,
+  inputMode,
+}) => {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <label style={styles.label}>{label}</label>
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "16px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: focused ? colors.primary[500] : colors.neutral[400],
+          }}
+        >
+          {icon}
+        </div>
+        <input
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          maxLength={maxLength}
+          required={required}
+          inputMode={inputMode}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{ ...styles.input, ...(focused ? styles.inputFocused : {}) }}
+        />
+      </div>
+    </div>
+  );
+};
+
+interface StatementReviewProps {
+  onNext: () => void;
+  onBack: () => void;
+}
+
 export const StatementReview: React.FC<StatementReviewProps> = ({
   onNext,
   onBack,
 }) => {
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [accountNumber, setAccountNumber] = useState<string>("");
-  const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [salaryReview, { isLoading, isError, error }] =
-    useSalaryReviewMutation();
-  const [salaryReviewOTP, { isLoading: verifyLoading }] =
-    useSalaryReviewOTPMutation();
-  const [resentBVNOtp, { isLoading: resendLoading }] =
-    useResentBVNOtpMutation();
-  const [verifyResendBVNOtp, { isLoading: verifyResendLoading }] =
-    useVerifyResendBVNOtpMutation();
-
+  const [bvn, setBvn] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
   const [resendOTP, setResendOTP] = useState<boolean>(false);
@@ -64,67 +583,86 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     message: string;
     title?: string;
   }>({ open: false, message: "", title: undefined });
-  // const [resendLoading, setResendLoading] = useState<boolean>(false);
 
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 11) {
-      setPhoneNumber(value);
-    }
-  };
+  const [salaryReview, { isLoading }] = useSalaryReviewMutation();
+  const [salaryReviewOTP, { isLoading: verifyLoading }] =
+    useSalaryReviewOTPMutation();
+  const [resentBVNOtp, { isLoading: resendLoading }] =
+    useResentBVNOtpMutation();
+  const [, { isLoading: verifyResendLoading }] =
+    useVerifyResendBVNOtpMutation();
+
+  const isAnyLoading =
+    isLoading || verifyLoading || resendLoading || verifyResendLoading;
 
   const handleAccountNumberChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 10) {
-      setAccountNumber(value);
-    }
+    if (value.length <= 10) setAccountNumber(value);
   };
 
-  const handleOtpView = async () => {
-    setTimeout(() => {
-      setIsOTP(true);
-      // setLoadingState(false);
-    }, 1000);
+  const handleBvnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    if (value.length <= 11) setBvn(value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const loanId = localStorage.getItem("loanId");
+    if (!selectedBank || !accountNumber || !bvn) {
+      setModal({
+        open: true,
+        message: "Please fill in all fields.",
+        title: "Missing Fields",
+      });
+      return;
+    }
+    try {
+      const response = await salaryReview({
+        bankCode: selectedBank,
+        accountNo: accountNumber,
+        bvn: bvn,
+        loanId: loanId || "",
+      }).unwrap();
+      if (response?.success) {
+        setIsOTP(true);
+        setModal({
+          open: true,
+          message: "OTP sent to your phone. Please verify.",
+          title: "OTP Sent",
+        });
+      } else {
+        setResendOTP(true);
+        setModal({
+          open: true,
+          message: response.message || "Failed to submit. Please try again.",
+          title: "Error",
+        });
+      }
+    } catch (err: unknown) {
+      setResendOTP(true);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Error submitting form. Please try again.";
+      setModal({ open: true, message: errorMessage, title: "Error" });
+    }
   };
 
   const handleOTPSubmit = async (e: React.FormEvent) => {
-    const loanId = localStorage.getItem("loanId");
     e.preventDefault();
-    if (otpVerified) {
-      handleVerifyResendOTP();
-      return;
-    }
-    // onLogin(email, bvn, dob.toDateString());
+    const loanId = localStorage.getItem("loanId");
     if (!otp || otp.length !== 6) {
       setModal({
         open: true,
-        message: "Please enter a valid 4-digit OTP.",
+        message: "Please enter a valid 6-digit OTP.",
         title: "Invalid OTP",
       });
       return;
     }
-    if (verifyLoading) {
-      setModal({
-        open: true,
-        message: "Processing, please wait...",
-        title: "Please Wait",
-      });
-      return;
-    }
-    console.log("Loan ID:", {
-      loanId: loanId || "",
-      otp: otp,
-    });
-    const response = await salaryReviewOTP({
-      loanId: loanId || "",
-      otp: otp,
-    });
-
-    console.log("Verify OTP Response:", response);
+    const response = await salaryReviewOTP({ loanId: loanId || "", otp });
     if (response.data?.success) {
-      // OTP verification successful
       setOtpVerified(true);
       setModal({
         open: true,
@@ -132,352 +670,244 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
         title: "Success",
       });
     } else {
-      // OTP verification failed
       setResendOTP(true);
       setOtp("");
+      const errorMessage =
+        (response?.error &&
+          "data" in response.error &&
+          (response.error as { data?: { message?: string } }).data?.message) ||
+        "OTP verification failed.";
+      setModal({ open: true, message: errorMessage, title: "Error" });
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      const response = await resentBVNOtp({ bvn }).unwrap();
+      if (response?.success) {
+        setOtpVerified(false);
+        setModal({
+          open: true,
+          message: response.message || "OTP resent successfully.",
+          title: "OTP Resent",
+        });
+      } else {
+        setModal({
+          open: true,
+          message: response.message || "Failed to resend OTP.",
+          title: "Error",
+        });
+      }
+    } catch {
       setModal({
         open: true,
-        message:
-          (response?.error &&
-            "data" in response.error &&
-            (response.error as any).data?.message) ||
-          (response?.error && "message" in response.error
-            ? (response.error as { message?: string }).message
-            : undefined) ||
-          "OTP verification failed.",
+        message: "Error resending OTP. Please try again.",
         title: "Error",
       });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // onNext();
-    console.log("Bank:", selectedBank);
-    console.log("Account Number:", accountNumber);
-    console.log("Phone Number:", phoneNumber);
-    const loanId = localStorage.getItem("loanId");
-
-    console.log("Loan ID:", {
-      bankCode: selectedBank,
-      accountNo: accountNumber,
-      bvn: phoneNumber,
-      loanId: loanId || "",
-    });
-    // Here you can handle the form submission, e.g., send data to an API
-    if (selectedBank && accountNumber && phoneNumber) {
-      // Simulate API call or further processing
-      try {
-        salaryReview({
-          bankCode: selectedBank,
-          accountNo: accountNumber,
-          bvn: phoneNumber,
-          loanId: loanId || "",
-        })
-          .unwrap()
-          .then((response) => {
-            console.log("Form submitted successfully:", response.data);
-            if (response?.success) {
-              setIsOTP(true);
-            } else {
-              setResendOTP(true);
-              setOtp("");
-              setModal({
-                open: true,
-                message:
-                  response.message ||
-                  "Failed to submit form. Please try again.",
-                title: "Submission Failed",
-              });
-            }
-          })
-          .catch((err) => {
-            console.log("Error submitting form:", err);
-            setResendOTP(true);
-            setModal({
-              open: true,
-              message:
-                err?.message || "Error submitting form. Please try again.",
-              title: "Submission Error",
-            });
-            if (isError) {
-              console.error("Error details:", error);
-            }
-          });
-      } catch (error) {
-        console.error("Error submitting form:", error);
-        // onNext();
-      }
-    } else {
-      console.error("Please fill in all fields correctly.");
-    }
-  };
-
-  const handleResendOTP = async () => {
-    // setResendLoading(true);
-    const loanId = localStorage.getItem("loanId");
-    try {
-      const response = await resentBVNOtp({
-        bvn: phoneNumber,
-      }).unwrap();
-      if (response?.success) {
-        setIsOTP(true);
-        setOtpVerified(false);
-        setModal({
-          open: true,
-          message:
-            response.message ||
-            "OTP resent successfully. Please check your email.",
-          title: "OTP Resent",
-        });
-      } else {
-        setModal({
-          open: true,
-          message:
-            response.message || "Failed to resend OTP. Please try again.",
-          title: "Resend Failed",
-        });
-      }
-    } catch (error: any) {
-      setModal({
-        open: true,
-        message: error?.message || "Error resending OTP. Please try again.",
-        title: "Resend Error",
-      });
-    }
-  };
-
-  const handleVerifyResendOTP = async () => {
-    console.log("Verifying Resend OTP...");
-    try {
-      const response = await verifyResendBVNOtp({
-        bvn: phoneNumber,
-        otp: otp,
-      }).unwrap();
-      if (response?.success) {
-        setIsOTP(true);
-        setModal({
-          open: true,
-          message: "OTP resent successfully. Please check your email.",
-          title: "OTP Resent",
-        });
-      } else {
-        setModal({
-          open: true,
-          message:
-            response.message || "Failed to resend OTP. Please try again.",
-          title: "Resend Failed",
-        });
-      }
-    } catch (error: any) {
-      setModal({
-        open: true,
-        message: error?.message || "Error resending OTP. Please try again.",
-        title: "Resend Error",
-      });
-    }
-  };
-
   return (
-    <div className="login-container">
-      <div className="login-left-panel">
-        <div className="logo-container">
-          <h1 className="logo-text">deVpay</h1>
-        </div>
-        <div className="illustration-container">
-          <img src={peopleBg} alt="Business People" className="illustration" />
-        </div>
-      </div>
-
-      <div className="login-right-panel">
-        <div className="back-button-container">
-          <button className="back-button" onClick={onBack}>
-            <span className="back-icon">‹</span>
-            <span>Go Back</span>
-          </button>
-        </div>
-
-        <div className="login-form-container">
-          <ProgressBar currentStep={2} />
-          <div className="login-header">
-            <h1>Account Review</h1>
-            <p>Please provide your bank details for statement review.</p>
-          </div>
-
-          <form
-            onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
-            className="login-form"
+    <div style={styles.container}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "24px",
+          minHeight: "100vh",
+          overflowY: "auto",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{ width: "100%", maxWidth: "520px" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "24px",
+            }}
           >
-            <div className="form-group">
-              <FormControl fullWidth>
-                <InputLabel id="bank-select-label">Select Bank</InputLabel>
-                <Select
-                  labelId="bank-select-label"
-                  id="bank-select"
-                  value={selectedBank}
-                  label="Select Bank"
-                  onChange={(e) => setSelectedBank(e.target.value)}
-                  required
-                  sx={{
-                    height: "48px", // Matches the input field height
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "8px",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#e0e0e0",
-                    },
-                    "& .MuiSelect-select": {
-                      padding: "12px 16px",
-                      fontSize: "16px",
-                    },
-                  }}
-                  className="form-input"
-                >
-                  {NIGERIAN_BANKS.map((bank) => (
-                    <MenuItem key={bank.code} value={bank.code}>
-                      {bank.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <img
+              src={Logo}
+              alt="Logo"
+              style={{ height: "60px", objectFit: "contain" }}
+            />
+            <button
+              onClick={onBack}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: colors.primary[600],
+                fontSize: "14px",
+                fontWeight: 500,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <ArrowLeft size={16} />
+              Go Back
+            </button>
+          </div>
+          <div style={styles.card}>
+            <ProgressSteps currentStep={2} />
+            <div style={{ marginBottom: "32px" }}>
+              <h1
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 700,
+                  color: colors.neutral[900],
+                  marginBottom: "8px",
+                }}
+              >
+                Account Review
+              </h1>
+              <p style={{ fontSize: "15px", color: colors.neutral[500] }}>
+                Please provide your bank details for salary statement review.
+              </p>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="accountNumber">Account Number</label>
-              <input
+            <form onSubmit={isOTP ? handleOTPSubmit : handleSubmit}>
+              <BankSelect value={selectedBank} onChange={setSelectedBank} />
+              <ModernInput
+                label="Account Number"
                 type="text"
-                id="accountNumber"
                 placeholder="Enter 10-digit account number"
                 value={accountNumber}
                 onChange={handleAccountNumberChange}
-                required
-                className="form-input"
+                icon={<CreditCard size={20} />}
                 maxLength={10}
-                pattern="\d{10}"
                 inputMode="numeric"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phoneNumber">BVN</label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                placeholder="Enter 11-digit BVN"
-                value={phoneNumber}
-                onChange={handlePhoneNumberChange}
                 required
-                className="form-input"
-                maxLength={11}
-                pattern="\d{11}"
-                inputMode="numeric"
               />
-            </div>
-
-            {isOTP && (
-              <div className="form-group">
-                <label htmlFor="otp">SMS OTP</label>
-                <div
-                  className="password-input-container"
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                  }}
+              <ModernInput
+                label="BVN"
+                type="text"
+                placeholder="Enter 11-digit BVN"
+                value={bvn}
+                onChange={handleBvnChange}
+                icon={<Hash size={20} />}
+                maxLength={11}
+                inputMode="numeric"
+                required
+              />
+              {isOTP && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <input
-                    type="number"
-                    id="otp"
-                    placeholder="Enter the OTP sent to you via SMS"
+                  <ModernInput
+                    label="SMS OTP"
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
                     value={otp}
                     onChange={(e) => {
-                      if (e.target.value.length <= 6) {
+                      if (
+                        e.target.value.length <= 6 &&
+                        /^\d*$/.test(e.target.value)
+                      )
                         setOtp(e.target.value);
-                      }
                     }}
-                    required
-                    className="form-input"
+                    icon={<KeyRound size={20} />}
                     maxLength={6}
-                    pattern="[0-9]{6}"
+                    inputMode="numeric"
+                    required
                   />
-                </div>
-              </div>
-            )}
-
-            {resendOTP && (
-              <div style={{ marginTop: "8px" }}>
-                <span
+                </motion.div>
+              )}
+              {resendOTP && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={resendLoading}
                   style={{
-                    color: resendLoading ? "#aaa" : "#1976d2",
-                    textDecoration: "underline",
-                    cursor: resendLoading ? "not-allowed" : "pointer",
+                    background: "transparent",
+                    border: "none",
+                    color: resendLoading
+                      ? colors.neutral[400]
+                      : colors.primary[600],
+                    fontSize: "14px",
                     fontWeight: 500,
-                    fontSize: "15px",
-                  }}
-                  onClick={() => {
-                    if (
-                      !resendLoading &&
-                      selectedBank &&
-                      accountNumber &&
-                      phoneNumber
-                    ) {
-                      handleResendOTP();
-                    }
-                  }}
-                >
-                  {resendLoading ? "Resending..." : "Resend OTP"}
-                </span>
-              </div>
-            )}
-
-            <div className="form-group">
-              {isLoading ? (
-                <button
-                  type="submit"
-                  className="login-button"
-                  disabled
-                  style={{
+                    cursor: resendLoading ? "not-allowed" : "pointer",
+                    textDecoration: "underline",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
+                    gap: "6px",
+                    marginBottom: "16px",
+                    padding: 0,
                   }}
                 >
-                  <Spinner size={22} />
-                </button>
-              ) : (
-                <button type="submit" className="login-button">
-                  Continue
-                </button>
+                  <RefreshCw
+                    size={14}
+                    className={resendLoading ? "animate-spin" : ""}
+                  />
+                  {resendLoading
+                    ? "Resending..."
+                    : "Didn't get the OTP? Resend"}
+                </motion.button>
               )}
-            </div>
-          </form>
-
-          <Modal
-            open={modal.open}
-            onClose={() => setModal({ ...modal, open: false })}
-            title={modal.title}
-            actions={
               <button
-                className="login-button"
-                onClick={() => {
-                  if (otpVerified) {
-                    onNext();
-                  } else {
-                    setModal({ ...modal, open: false });
-                  }
+                type="submit"
+                disabled={isAnyLoading}
+                style={{
+                  ...styles.button,
+                  ...(isAnyLoading ? styles.buttonDisabled : {}),
                 }}
               >
-                Ok, got it
+                {isAnyLoading ? (
+                  <>
+                    <Loader2
+                      size={20}
+                      style={{ animation: "spin 1s linear infinite" }}
+                    />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {isOTP ? "Verify OTP" : "Continue"}
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
-            }
+            </form>
+          </div>
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: "24px",
+              fontSize: "13px",
+              color: colors.neutral[500],
+            }}
           >
-            {modal.message}
-          </Modal>
-        </div>
+            Your data is secured with bank-level encryption
+          </p>
+        </motion.div>
       </div>
+      <ModernModal
+        open={modal.open}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal({ ...modal, open: false })}
+        onAction={() => {
+          if (otpVerified) {
+            onNext();
+          } else {
+            setModal({ ...modal, open: false });
+          }
+        }}
+      />
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin { animation: spin 1s linear infinite; }`}</style>
     </div>
   );
 };

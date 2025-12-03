@@ -51,6 +51,39 @@ export interface LoanBreakdownResponse {
   };
 }
 
+// Current Status Response for resuming application
+export interface CurrentStatusData {
+  loanId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  currentStep: number;
+  currentStepName: string;
+  currentStepDescription: string;
+  nextStepName: string;
+  nextStepDescription: string;
+  isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  emailVerifiedAt?: string;
+  bvnVerifiedAt?: string;
+  bankVerifiedAt?: string;
+  personalDetailsAt?: string;
+  loanSubmittedAt?: string;
+  stepNumber: number;
+  totalSteps: number;
+  progressPercentage: number;
+  companyName: string;
+  productName: string;
+  requiredActions: string[];
+}
+
+export interface CurrentStatusResponse {
+  success: boolean;
+  message: string;
+  data: CurrentStatusData | null;
+}
+
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -187,6 +220,14 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
+    // Get current application status for resuming
+    getCurrentStatus: builder.query<CurrentStatusResponse, { bvn: string } | { email: string } | { loanId: string }>({
+      query: (params) => ({
+        url: "/Borrower/current-step",
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });
 
@@ -203,4 +244,6 @@ export const {
   useVerifyResendBVNOtpMutation,
   useResendEmailOtpMutation,
   useVerifyResendEmailOtpMutation,
+  useGetCurrentStatusQuery,
+  useLazyGetCurrentStatusQuery,
 } = baseApi;
