@@ -1416,6 +1416,7 @@ const PersonalDetails: React.FC = () => {
     identificationType: "",
     idNumber: "",
     expiryDate: "",
+    document: "",
   });
   const [document, setDocument] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1452,9 +1453,9 @@ const PersonalDetails: React.FC = () => {
       formData.identificationType === "Driver's License";
 
     switch (field) {
-      case "employer":
-        if (!formData.employer) error = "Please select your employer";
-        break;
+      // case "employer":
+      //   if (!formData.employer) error = "Please select your employer";
+      //   break;
       case "addressLine":
         if (!formData.addressLine) error = "Please enter your address";
         else if (formData.addressLine.length < 3)
@@ -1490,12 +1491,7 @@ const PersonalDetails: React.FC = () => {
     const requiresExpiry =
       formData.identificationType === "International Passport" ||
       formData.identificationType === "Driver's License";
-    const fields = [
-      "employer",
-      "addressLine",
-      "identificationType",
-      "idNumber",
-    ];
+    const fields = ["addressLine", "identificationType", "idNumber"];
     if (requiresExpiry) {
       fields.push("expiryDate");
     }
@@ -1543,14 +1539,60 @@ const PersonalDetails: React.FC = () => {
     }
   };
 
-  // Convert file to base64
+  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       let base64String = reader.result as string;
+  //       // Remove data URL prefix if present
+  //       if (base64String.startsWith("data:image/png;base64,")) {
+  //         base64String = base64String.substring(base64String.indexOf(",") + 1);
+  //       }
+  //       setFormData({
+  //         ...formData,
+  //         document: base64String,
+  //       });
+  //       setDocument(file.name);
+  //       console.log("Selected file (base64):", base64String);
+  //       console.log("Selected file name:", file.name);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+
+  // Convert file to base64 (strips the data URL prefix)
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64String = result.includes(",")
+          ? result.split(",")[1]
+          : result;
+        resolve(base64String);
+      };
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  // Get file extension from file name or mime type
+  const getFileExtension = (file: File): string => {
+    // Try to get extension from file name
+    const fileNameParts = file.name.split(".");
+    if (fileNameParts.length > 1) {
+      return fileNameParts.pop()?.toLowerCase() || "";
+    }
+    // Fallback to mime type
+    const mimeToExt: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/jpg": "jpg",
+      "image/png": "png",
+      "application/pdf": "pdf",
+    };
+    return mimeToExt[file.type] || "";
   };
 
   const handleSubmit = async () => {
@@ -1562,20 +1604,37 @@ const PersonalDetails: React.FC = () => {
         navigate("/");
         return;
       }
-
       let imageBase64 = "";
+      let imageExtension = "";
       if (document) {
         imageBase64 = await fileToBase64(document);
+        imageExtension = getFileExtension(document);
       }
 
-      const response = await savePersonalDetails({
-        loanId,
+      const formDataToSubmit = {
         address: formData.addressLine,
         idNumber: formData.idNumber,
         frontImageBase64: imageBase64,
-        backImageBase64: imageBase64, // Using same image for both as we only have one upload
-      }).unwrap();
+        backImageBase64: imageBase64,
+        loanId: loanId || "",
+        frontImageExtension: imageExtension,
+        backImageExtension: imageExtension,
+      };
+      console.log("Submitting form data:", formDataToSubmit);
 
+      // const response = await savePersonalDetails({
+      //   loanId,
+      //   address: formData.addressLine,
+      //   idNumber: formData.idNumber,
+      //   frontImageBase64: imageBase64,
+      //   frontImageExtension: imageExtension,
+      //   backImageBase64: imageBase64, // Using same image for both as we only have one upload
+      //   backImageExtension: imageExtension,
+      // }).unwrap();
+
+      const response = await savePersonalDetails(formDataToSubmit).unwrap();
+
+      console.log("Save personal details response:", response);
       if (response.success) {
         navigate("/loan-application");
       }

@@ -51,7 +51,9 @@ export interface SavePersonalDetailsRequest {
   address: string;
   idNumber: string;
   frontImageBase64: string;
+  frontImageExtension: string;
   backImageBase64: string;
+  backImageExtension: string;
   loanId: string;
 }
 
