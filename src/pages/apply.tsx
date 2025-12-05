@@ -24,7 +24,7 @@ import {
   useResendEmailOtpMutation,
   useVerifyOtpMutation,
   useVerifyResendEmailOtpMutation,
-  useLazyGetCurrentStatusQuery,
+  useGetCurrentStatusMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
 import { EMPLOYERS } from "./personalDetails";
@@ -981,30 +981,30 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [verifyResendEmailOtp, { isLoading: verifyResendLoading }] =
     useVerifyResendEmailOtpMutation();
   const [getCurrentStatus, { isLoading: statusLoading }] =
-    useLazyGetCurrentStatusQuery();
+    useGetCurrentStatusMutation();
 
   // Check for existing application on mount
-  useEffect(() => {
-    const checkExistingApplication = async (storedLoanId: string) => {
-      try {
-        const response = await getCurrentStatus({
-          loanId: storedLoanId,
-        }).unwrap();
-        if (response.success && response.data && !response.data.isCompleted) {
-          setResumeStatus(response.data);
-          setShowResumeModal(true);
-        }
-      } catch (error) {
-        // No existing application found or error, continue with fresh start
-        console.log("No existing application to resume");
-      }
-    };
+  // useEffect(() => {
+  //   const checkExistingApplication = async (storedLoanId: string) => {
+  //     try {
+  //       const response = await getCurrentStatus({
+  //         email: storedLoanId,
+  //       }).unwrap();
+  //       if (response.success && response.data && !response.data.isCompleted) {
+  //         setResumeStatus(response.data);
+  //         setShowResumeModal(true);
+  //       }
+  //     } catch (error) {
+  //       // No existing application found or error, continue with fresh start
+  //       console.log("No existing application to resume");
+  //     }
+  //   };
 
-    const storedLoanId = localStorage.getItem("loanId");
-    if (storedLoanId) {
-      checkExistingApplication(storedLoanId);
-    }
-  }, [getCurrentStatus]);
+  //   const storedLoanId = localStorage.getItem("loanId");
+  //   if (storedLoanId) {
+  //     checkExistingApplication(storedLoanId);
+  //   }
+  // }, [getCurrentStatus]);
 
   const handleResumeApplication = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1029,7 +1029,10 @@ const LoginPage: React.FC<LoginPageProps> = () => {
 
     try {
       const response = await getCurrentStatus({ email: resumeEmail }).unwrap();
+      console.log("Resume application response:", response);
       if (response.success && response.data) {
+        console.log("Current step:", response.data.currentStep);
+        console.log("Step number:", response.data.stepNumber);
         setResumeStatus(response.data);
         localStorage.setItem("loanId", response.data.loanId);
         setShowResumeModal(true);
@@ -1795,7 +1798,12 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         statusData={resumeStatus}
         onContinue={() => {
           if (resumeStatus) {
-            navigateToStep(resumeStatus.stepNumber);
+            console.log("Navigating to step:", resumeStatus.stepNumber);
+            console.log("Current step is:", resumeStatus.currentStep);
+            // Use currentStep + 1 to navigate to the next incomplete step
+            const nextStep = resumeStatus.currentStep + 1;
+            console.log("Will navigate to step:", nextStep);
+            navigateToStep(nextStep);
           }
         }}
         onStartNew={() => {

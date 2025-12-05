@@ -221,11 +221,11 @@ export const baseApi = createApi({
       }),
     }),
     // Get current application status for resuming
-    getCurrentStatus: builder.query<CurrentStatusResponse, { bvn: string } | { email: string } | { loanId: string }>({
-      query: (params) => ({
+    getCurrentStatus: builder.mutation<CurrentStatusResponse, { email: string }>({
+      query: body => ({
         url: "/Borrower/current-step",
-        method: "GET",
-        params,
+        method: "POST",
+        body,
       }),
     }),
   }),
@@ -244,6 +244,5 @@ export const {
   useVerifyResendBVNOtpMutation,
   useResendEmailOtpMutation,
   useVerifyResendEmailOtpMutation,
-  useGetCurrentStatusQuery,
-  useLazyGetCurrentStatusQuery,
+  useGetCurrentStatusMutation,
 } = baseApi;
