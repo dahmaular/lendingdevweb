@@ -536,6 +536,20 @@ const LoanApplication: React.FC = () => {
       }).unwrap();
 
       if (response.success) {
+        // Store loan data for confirmation page
+        const loanDetailsForConfirmation = {
+          loanAmount,
+          duration,
+          interestRate,
+          processingFee: loanBreakdown.processingFee,
+          totalInterest: loanBreakdown.totalInterest,
+          totalRepayment: loanBreakdown.totalRepayment,
+          monthlyPayment: loanBreakdown.monthlyPayment,
+        };
+        localStorage.setItem(
+          "loanDetails",
+          JSON.stringify(loanDetailsForConfirmation)
+        );
         navigate("/confirmation");
       }
     } catch (err: any) {
@@ -628,7 +642,7 @@ const LoanApplication: React.FC = () => {
               <label style={styles.label}>Enter amount</label>
               <div style={styles.inputWrapper}>
                 <span style={styles.inputIcon}>
-                  <DollarSign size={20} />
+                  {/* <DollarSign size={20} /> */}₦
                 </span>
                 <input
                   type="text"
