@@ -1636,6 +1636,17 @@ const PersonalDetails: React.FC = () => {
 
       console.log("Save personal details response:", response);
       if (response.success) {
+        console.log("personalResponse", response);
+
+        // Store maxLoanEligible if it exists in the response
+        if (response.data?.maxLoanEligible) {
+          localStorage.setItem(
+            "maxLoanEligible",
+            response.data.maxLoanEligible.toString()
+          );
+          console.log("Stored maxLoanEligible:", response.data.maxLoanEligible);
+        }
+
         navigate("/loan-application");
       }
     } catch (error: any) {
