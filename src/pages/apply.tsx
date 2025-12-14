@@ -1798,12 +1798,24 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         statusData={resumeStatus}
         onContinue={() => {
           if (resumeStatus) {
-            console.log("Navigating to step:", resumeStatus.stepNumber);
-            console.log("Current step is:", resumeStatus.currentStep);
-            // Use currentStep + 1 to navigate to the next incomplete step
-            const nextStep = resumeStatus.currentStep + 1;
-            console.log("Will navigate to step:", nextStep);
-            navigateToStep(nextStep);
+            console.log("currentStep value:", resumeStatus.currentStep);
+            console.log("stepNumber value:", resumeStatus.stepNumber);
+
+            // Navigate to currentStep (the step user needs to complete)
+            const stepToNavigate = resumeStatus.currentStep;
+            console.log("Navigating to step:", stepToNavigate);
+
+            // If navigating to step 4 (loan application), ensure maxLoanEligible is set
+            if (
+              stepToNavigate === 4 &&
+              !localStorage.getItem("maxLoanEligible")
+            ) {
+              // Set a default high value if not available from API
+              localStorage.setItem("maxLoanEligible", "1000000");
+              console.log("Set default maxLoanEligible for step 4");
+            }
+
+            navigateToStep(stepToNavigate);
           }
         }}
         onStartNew={() => {
