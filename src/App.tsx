@@ -3,10 +3,8 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Link,
   useNavigate,
 } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Button } from "@mui/material";
 import "./App.css";
 import ConfirmationPage from "./components/ConfirmationPage";
 import LoginPage from "./pages/apply";
@@ -29,21 +27,6 @@ const AppContent = () => {
 
   return (
     <div className="App">
-      <AppBar position="static">
-        {/* <Toolbar>
-          <Typography
-            variant="h6"
-            component={Link}
-            to="/"
-            sx={{ textDecoration: "none", color: "white", flexGrow: 1 }}
-          >
-            LendGrid
-          </Typography>
-          <Button color="inherit" component={Link} to="/">
-            Apply Now
-          </Button>
-        </Toolbar> */}
-      </AppBar>
       <Routes>
         <Route
           path="/"
