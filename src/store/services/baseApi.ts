@@ -255,6 +255,29 @@ export const baseApi = createApi({
         body,
       }),
     }),
+    // Upload signed offer letter
+    uploadSignedOfferLetter: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: {
+          documentId: string;
+          url: string;
+        } | null;
+      },
+      {
+        loanId: string;
+        documentName: string;
+        base64String: string;
+        fileExtension: string;
+      }
+    >({
+      query: ({ loanId, ...body }) => ({
+        url: `/Borrower/${loanId}/upload-signed-offer-letter`,
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -273,4 +296,5 @@ export const {
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
   useUploadIDMutation,
+  useUploadSignedOfferLetterMutation,
 } = baseApi;

@@ -11,6 +11,7 @@ import LoginPage from "./pages/apply";
 import StatementReview from "./components/StatementReview";
 import LoanApplicationPage from "./pages/loanApplication";
 import PersonalDetails from "./pages/personalDetails";
+import UploadOfferLetter from "./pages/uploadOfferLetter";
 
 // Wrapper component to use hooks
 const AppContent = () => {
@@ -51,6 +52,7 @@ const AppContent = () => {
         <Route path="/personal-details" element={<PersonalDetails />} />
         <Route path="/loan-application" element={<LoanApplicationPage />} />
         <Route path="/confirmation" element={<ConfirmationPage />} />
+        <Route path="/upload-offer-letter" element={<UploadOfferLetter />} />
       </Routes>
     </div>
   );
