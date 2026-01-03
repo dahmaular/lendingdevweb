@@ -195,6 +195,30 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
+    uploadID: builder.mutation<
+      {
+        data: {
+          documentId: string;
+          url: string;
+          id: string;
+          documentName: string;
+          uploadedAt: string;
+        };
+      },
+      {
+        documentName: string;
+        base64String: string;
+        fileExtension: string;
+      }
+    >({
+      query: (body) => {
+        return {
+          url: "/Document/upload",
+          method: "POST",
+          body,
+        };
+      },
+    }),
     loanBreakdown: builder.mutation<
       LoanApplicationResponse,
       LoanBreakdownRequest
@@ -221,8 +245,11 @@ export const baseApi = createApi({
       }),
     }),
     // Get current application status for resuming
-    getCurrentStatus: builder.mutation<CurrentStatusResponse, { email: string }>({
-      query: body => ({
+    getCurrentStatus: builder.mutation<
+      CurrentStatusResponse,
+      { email: string }
+    >({
+      query: (body) => ({
         url: "/Borrower/current-step",
         method: "POST",
         body,
@@ -245,4 +272,5 @@ export const {
   useResendEmailOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useUploadIDMutation,
 } = baseApi;

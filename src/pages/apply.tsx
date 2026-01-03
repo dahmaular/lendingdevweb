@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -566,6 +566,323 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
   );
 };
 
+// Consent Modal Component
+interface ConsentModalProps {
+  open: boolean;
+  onAccept: () => void;
+}
+
+const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
+  if (!open) return null;
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            padding: "20px",
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            style={{
+              background: "#fff",
+              borderRadius: "28px",
+              padding: "0",
+              maxWidth: "580px",
+              width: "100%",
+              boxShadow: shadows.xl,
+              overflow: "hidden",
+            }}
+          >
+            {/* Gradient Header */}
+            <div
+              style={{
+                background: `linear-gradient(135deg, ${colors.primary[600]} 0%, ${colors.secondary[600]} 100%)`,
+                padding: "32px",
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              {/* Decorative circles */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-30px",
+                  right: "-30px",
+                  width: "120px",
+                  height: "120px",
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.1)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-20px",
+                  left: "-20px",
+                  width: "80px",
+                  height: "80px",
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.08)",
+                }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "18px",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    backdropFilter: "blur(10px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+                  }}
+                >
+                  <Shield size={32} color="#fff" />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 700,
+                      color: "#fff",
+                      marginBottom: "4px",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Terms & Consent
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "rgba(255, 255, 255, 0.9)",
+                      margin: 0,
+                    }}
+                  >
+                    Please review and accept to continue
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: "32px" }}>
+              <div
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary[50]} 0%, ${colors.secondary[50]} 100%)`,
+                  borderRadius: "16px",
+                  padding: "24px",
+                  marginBottom: "24px",
+                  border: `2px solid ${colors.primary[100]}`,
+                  position: "relative",
+                }}
+              >
+                {/* Decorative accent */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "4px",
+                    height: "100%",
+                    background: `linear-gradient(180deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
+                    borderRadius: "16px 0 0 16px",
+                  }}
+                />
+
+                <p
+                  style={{
+                    fontSize: "15px",
+                    lineHeight: 1.7,
+                    color: colors.neutral[800],
+                    margin: 0,
+                    textAlign: "justify",
+                  }}
+                >
+                  By clicking{" "}
+                  <strong style={{ color: colors.primary[700] }}>Accept</strong>
+                  , I consent to{" "}
+                  <strong style={{ color: colors.primary[700] }}>
+                    Devtage Financial Services Limited
+                  </strong>{" "}
+                  obtaining information from relevant third parties as may be
+                  necessary, on my <strong>employment details</strong>,{" "}
+                  <strong>salary payment history</strong>,{" "}
+                  <strong>loans</strong>, and{" "}
+                  <strong>other related data</strong>, to make a decision on my
+                  loan application.
+                  <br />
+                  <br />I also consent to the loan amounts being{" "}
+                  <strong>deducted from my salary at source</strong> before
+                  credit to my account; and any outstanding loans being{" "}
+                  <strong>
+                    recovered automatically from any BVN accounts linked to me
+                  </strong>{" "}
+                  in the case of default.
+                </p>
+              </div>
+
+              {/* Info boxes */}
+              <div
+                style={{ display: "flex", gap: "12px", marginBottom: "24px" }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "16px",
+                    background: colors.neutral[50],
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    border: `1px solid ${colors.neutral[200]}`,
+                  }}
+                >
+                  <Shield
+                    size={18}
+                    color={colors.primary[600]}
+                    style={{ flexShrink: 0 }}
+                  />
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: colors.neutral[600],
+                        margin: 0,
+                        marginBottom: "2px",
+                      }}
+                    >
+                      Secure
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: colors.neutral[800],
+                        margin: 0,
+                      }}
+                    >
+                      Bank-level security
+                    </p>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "16px",
+                    background: colors.neutral[50],
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    border: `1px solid ${colors.neutral[200]}`,
+                  }}
+                >
+                  <Check
+                    size={18}
+                    color={colors.secondary[600]}
+                    style={{ flexShrink: 0 }}
+                  />
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: colors.neutral[600],
+                        margin: 0,
+                        marginBottom: "2px",
+                      }}
+                    >
+                      Verified
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: colors.neutral[800],
+                        margin: 0,
+                      }}
+                    >
+                      Regulated lender
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accept Button */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onAccept}
+                style={{
+                  width: "100%",
+                  padding: "18px 24px",
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: "14px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  background: `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
+                  color: "#fff",
+                  boxShadow: `0 8px 24px ${colors.primary[200]}`,
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <Check size={20} />
+                I Accept & Continue
+                <ArrowRight size={20} />
+              </motion.button>
+
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: colors.neutral[500],
+                  textAlign: "center",
+                  marginTop: "16px",
+                  marginBottom: 0,
+                }}
+              >
+                Your data is protected under applicable privacy laws
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 // Progress Steps Component
 const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
   const steps = [
@@ -966,6 +1283,8 @@ const LoginPage: React.FC<LoginPageProps> = () => {
     null
   );
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
+  const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
+  const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -1078,7 +1397,6 @@ const LoginPage: React.FC<LoginPageProps> = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoadingState(true);
 
     if (!email || !firstName || !lastName) {
       setModal({
@@ -1086,9 +1404,16 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         message: "Please fill in all fields.",
         title: "Missing Fields",
       });
-      setLoadingState(false);
       return;
     }
+
+    // Show consent modal if not yet accepted
+    if (!consentAccepted) {
+      setShowConsentModal(true);
+      return;
+    }
+
+    setLoadingState(true);
 
     const today = new Date();
     const age = today.getFullYear() - dob.getFullYear();
@@ -1776,6 +2101,22 @@ const LoginPage: React.FC<LoginPageProps> = () => {
           </p>
         </motion.div>
       </div>
+
+      {/* Consent Modal */}
+      <ConsentModal
+        open={showConsentModal}
+        onAccept={() => {
+          setShowConsentModal(false);
+          setConsentAccepted(true);
+          // Trigger form submission after consent
+          const form = document.querySelector("form");
+          if (form) {
+            form.dispatchEvent(
+              new Event("submit", { cancelable: true, bubbles: true })
+            );
+          }
+        }}
+      />
 
       {/* Modal */}
       <ModernModal

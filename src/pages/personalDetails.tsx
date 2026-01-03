@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,24 +7,22 @@ import {
   CreditCard,
   Upload,
   FileText,
-  Briefcase,
-  Building2,
-  Search,
   ChevronDown,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
   X,
   Shield,
-  Info,
   Loader2,
-  Camera,
   FileImage,
   AlertCircle,
   Home,
   Calendar,
 } from "lucide-react";
-import { useSavePersonalDetailsMutation } from "../store/services/baseApi";
+import {
+  useSavePersonalDetailsMutation,
+  useUploadIDMutation,
+} from "../store/services/baseApi";
 
 // ============== Color Theme ==============
 const colors = {
@@ -851,6 +849,8 @@ const styles = {
 };
 
 // ============== Employer Select Component ==============
+// Commented out as employer field is no longer required
+/* 
 interface EmployerSelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -1002,6 +1002,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
     </div>
   );
 };
+*/
 
 // ============== Identification Type Select Component ==============
 interface IdentificationTypeSelectProps {
@@ -1409,6 +1410,7 @@ const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
 const PersonalDetails: React.FC = () => {
   const navigate = useNavigate();
   const [savePersonalDetails, { isLoading }] = useSavePersonalDetailsMutation();
+  const [uploadID, { isLoading: isUploading }] = useUploadIDMutation();
 
   const [formData, setFormData] = useState({
     employer: "",
@@ -1418,10 +1420,12 @@ const PersonalDetails: React.FC = () => {
     expiryDate: "",
     document: "",
   });
-  const [document, setDocument] = useState<File | null>(null);
+  const [frontDocument, setFrontDocument] = useState<File | null>(null);
+  const [backDocument, setBackDocument] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const frontFileInputRef = useRef<HTMLInputElement>(null);
+  const backFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
@@ -1499,17 +1503,24 @@ const PersonalDetails: React.FC = () => {
     fields.forEach((field) => {
       if (!validateField(field)) isValid = false;
     });
-    if (!document) {
+    if (!frontDocument) {
       setErrors((prev) => ({
         ...prev,
-        document: "Please upload an ID document",
+        frontDocument: "Please upload the front of your ID document",
+      }));
+      isValid = false;
+    }
+    if (!backDocument) {
+      setErrors((prev) => ({
+        ...prev,
+        backDocument: "Please upload the back of your ID document",
       }));
       isValid = false;
     }
     return isValid;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const validTypes = [
@@ -1523,43 +1534,51 @@ const PersonalDetails: React.FC = () => {
       if (!validTypes.includes(file.type)) {
         setErrors((prev) => ({
           ...prev,
-          document: "Please upload a valid image (JPG, PNG) or PDF file",
+          frontDocument: "Please upload a valid image (JPG, PNG) or PDF file",
         }));
         return;
       }
       if (file.size > maxSize) {
         setErrors((prev) => ({
           ...prev,
-          document: "File size must be less than 5MB",
+          frontDocument: "File size must be less than 5MB",
         }));
         return;
       }
-      setDocument(file);
-      setErrors((prev) => ({ ...prev, document: "" }));
+      setFrontDocument(file);
+      setErrors((prev) => ({ ...prev, frontDocument: "" }));
     }
   };
 
-  // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       let base64String = reader.result as string;
-  //       // Remove data URL prefix if present
-  //       if (base64String.startsWith("data:image/png;base64,")) {
-  //         base64String = base64String.substring(base64String.indexOf(",") + 1);
-  //       }
-  //       setFormData({
-  //         ...formData,
-  //         document: base64String,
-  //       });
-  //       setDocument(file.name);
-  //       console.log("Selected file (base64):", base64String);
-  //       console.log("Selected file name:", file.name);
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
+  const handleBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const validTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "application/pdf",
+      ];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (!validTypes.includes(file.type)) {
+        setErrors((prev) => ({
+          ...prev,
+          backDocument: "Please upload a valid image (JPG, PNG) or PDF file",
+        }));
+        return;
+      }
+      if (file.size > maxSize) {
+        setErrors((prev) => ({
+          ...prev,
+          backDocument: "File size must be less than 5MB",
+        }));
+        return;
+      }
+      setBackDocument(file);
+      setErrors((prev) => ({ ...prev, backDocument: "" }));
+    }
+  };
 
   // Convert file to base64 (strips the data URL prefix)
   const fileToBase64 = (file: File): Promise<string> => {
@@ -1604,33 +1623,58 @@ const PersonalDetails: React.FC = () => {
         navigate("/");
         return;
       }
-      let imageBase64 = "";
-      let imageExtension = "";
-      if (document) {
-        imageBase64 = await fileToBase64(document);
-        imageExtension = getFileExtension(document);
+
+      const imageIds: string[] = [];
+
+      // Upload front document
+      if (frontDocument) {
+        const frontBase64 = await fileToBase64(frontDocument);
+        const frontExtension = getFileExtension(frontDocument);
+        const frontDocumentName = `ID_Front_${
+          formData.identificationType
+        }_${Date.now()}`;
+
+        console.log("Uploading front document...");
+        const frontUploadResponse = await uploadID({
+          documentName: frontDocumentName,
+          base64String: frontBase64,
+          fileExtension: frontExtension,
+        }).unwrap();
+
+        console.log("Front upload response:", frontUploadResponse);
+
+        const frontId = frontUploadResponse.data.id;
+        imageIds.push(frontId);
+        console.log("Front document uploaded. ID:", frontId);
+      }
+
+      // Upload back document
+      if (backDocument) {
+        const backBase64 = await fileToBase64(backDocument);
+        const backExtension = getFileExtension(backDocument);
+        const backDocumentName = `ID_Back_${
+          formData.identificationType
+        }_${Date.now()}`;
+
+        console.log("Uploading back document...");
+        const backUploadResponse = await uploadID({
+          documentName: backDocumentName,
+          base64String: backBase64,
+          fileExtension: backExtension,
+        }).unwrap();
+
+        const backId = backUploadResponse.data.id;
+        imageIds.push(backId);
+        console.log("Back document uploaded. ID:", backId);
       }
 
       const formDataToSubmit = {
         address: formData.addressLine,
         idNumber: formData.idNumber,
-        frontImageBase64: imageBase64,
-        backImageBase64: imageBase64,
-        loanId: loanId || "",
-        frontImageExtension: imageExtension,
-        backImageExtension: imageExtension,
+        imageIds: imageIds,
+        loanId: loanId,
       };
       console.log("Submitting form data:", formDataToSubmit);
-
-      // const response = await savePersonalDetails({
-      //   loanId,
-      //   address: formData.addressLine,
-      //   idNumber: formData.idNumber,
-      //   frontImageBase64: imageBase64,
-      //   frontImageExtension: imageExtension,
-      //   backImageBase64: imageBase64, // Using same image for both as we only have one upload
-      //   backImageExtension: imageExtension,
-      // }).unwrap();
 
       const response = await savePersonalDetails(formDataToSubmit).unwrap();
 
@@ -1873,27 +1917,27 @@ const PersonalDetails: React.FC = () => {
               </motion.div>
             )}
 
-            {/* Document Upload */}
+            {/* Front Document Upload */}
             <div style={styles.inputGroup}>
-              <label style={styles.label}>ID Document Upload *</label>
+              <label style={styles.label}>ID Document (Front) *</label>
               <input
                 type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
+                ref={frontFileInputRef}
+                onChange={handleFrontFileChange}
                 accept="image/*,.pdf"
                 style={{ display: "none" }}
               />
 
-              {!document ? (
+              {!frontDocument ? (
                 <motion.div
                   whileHover={{ borderColor: colors.primary.main }}
                   style={{
                     ...styles.fileUpload,
-                    borderColor: errors.document
+                    borderColor: errors.frontDocument
                       ? colors.status.error
                       : colors.border.light,
                   }}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => frontFileInputRef.current?.click()}
                 >
                   <motion.div
                     initial={{ scale: 1 }}
@@ -1913,7 +1957,7 @@ const PersonalDetails: React.FC = () => {
                       margin: 0,
                     }}
                   >
-                    Click to upload your ID document
+                    Click to upload front of ID
                   </p>
                   <p
                     style={{
@@ -1942,7 +1986,7 @@ const PersonalDetails: React.FC = () => {
                       justifyContent: "center",
                     }}
                   >
-                    {document.type.includes("pdf") ? (
+                    {frontDocument.type.includes("pdf") ? (
                       <FileText size={24} color={colors.primary.main} />
                     ) : (
                       <FileImage size={24} color={colors.primary.main} />
@@ -1957,7 +2001,7 @@ const PersonalDetails: React.FC = () => {
                         margin: 0,
                       }}
                     >
-                      {document.name}
+                      {frontDocument.name}
                     </p>
                     <p
                       style={{
@@ -1966,15 +2010,16 @@ const PersonalDetails: React.FC = () => {
                         margin: "4px 0 0",
                       }}
                     >
-                      {(document.size / 1024).toFixed(1)} KB
+                      {(frontDocument.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => {
-                      setDocument(null);
-                      if (fileInputRef.current) fileInputRef.current.value = "";
+                      setFrontDocument(null);
+                      if (frontFileInputRef.current)
+                        frontFileInputRef.current.value = "";
                     }}
                     style={{
                       background: "transparent",
@@ -1988,9 +2033,132 @@ const PersonalDetails: React.FC = () => {
                   </motion.button>
                 </motion.div>
               )}
-              {errors.document && (
+              {errors.frontDocument && (
                 <div style={styles.error}>
-                  <AlertCircle size={14} /> {errors.document}
+                  <AlertCircle size={14} /> {errors.frontDocument}
+                </div>
+              )}
+            </div>
+
+            {/* Back Document Upload */}
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>ID Document (Back) *</label>
+              <input
+                type="file"
+                ref={backFileInputRef}
+                onChange={handleBackFileChange}
+                accept="image/*,.pdf"
+                style={{ display: "none" }}
+              />
+
+              {!backDocument ? (
+                <motion.div
+                  whileHover={{ borderColor: colors.primary.main }}
+                  style={{
+                    ...styles.fileUpload,
+                    borderColor: errors.backDocument
+                      ? colors.status.error
+                      : colors.border.light,
+                  }}
+                  onClick={() => backFileInputRef.current?.click()}
+                >
+                  <motion.div
+                    initial={{ scale: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <Upload
+                      size={40}
+                      color={colors.primary.main}
+                      style={{ marginBottom: "12px" }}
+                    />
+                  </motion.div>
+                  <p
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 500,
+                      color: colors.text.primary,
+                      margin: 0,
+                    }}
+                  >
+                    Click to upload back of ID
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: colors.text.muted,
+                      margin: "8px 0 0",
+                    }}
+                  >
+                    JPG, PNG or PDF (max 5MB)
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={styles.filePreview}
+                >
+                  <div
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "12px",
+                      background: "#E3F2FD",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {backDocument.type.includes("pdf") ? (
+                      <FileText size={24} color={colors.primary.main} />
+                    ) : (
+                      <FileImage size={24} color={colors.primary.main} />
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: colors.text.primary,
+                        margin: 0,
+                      }}
+                    >
+                      {backDocument.name}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        color: colors.text.muted,
+                        margin: "4px 0 0",
+                      }}
+                    >
+                      {(backDocument.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setBackDocument(null);
+                      if (backFileInputRef.current)
+                        backFileInputRef.current.value = "";
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "8px",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <X size={20} color={colors.text.muted} />
+                  </motion.button>
+                </motion.div>
+              )}
+              {errors.backDocument && (
+                <div style={styles.error}>
+                  <AlertCircle size={14} /> {errors.backDocument}
                 </div>
               )}
             </div>
@@ -2034,19 +2202,19 @@ const PersonalDetails: React.FC = () => {
               style={{
                 ...styles.button,
                 flex: 2,
-                opacity: isLoading ? 0.7 : 1,
+                opacity: isLoading || isUploading ? 0.7 : 1,
               }}
               onClick={handleSubmit}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             >
-              {isLoading ? (
+              {isLoading || isUploading ? (
                 <>
                   <Loader2
                     size={20}
                     className="animate-spin"
                     style={{ animation: "spin 1s linear infinite" }}
                   />
-                  Saving...
+                  {isUploading ? "Uploading..." : "Saving..."}
                 </>
               ) : (
                 <>

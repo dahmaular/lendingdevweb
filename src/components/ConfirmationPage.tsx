@@ -6,20 +6,14 @@ import {
   User,
   FileText,
   CreditCard,
-  ArrowLeft,
   Download,
-  Share2,
   Home,
   PartyPopper,
   Wallet,
   Calendar,
   Percent,
   Clock,
-  Building2,
   Shield,
-  Copy,
-  Check,
-  X,
   Sparkles,
 } from "lucide-react";
 
@@ -540,7 +534,6 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   // Loan data from localStorage
   const [loanData, setLoanData] = useState({
@@ -589,12 +582,6 @@ const ConfirmationPage: React.FC = () => {
       }
     }
   }, [navigate]);
-
-  const handleCopyReference = () => {
-    navigator.clipboard.writeText(loanData.referenceNumber);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleNewApplication = () => {
     localStorage.removeItem("loanId");
