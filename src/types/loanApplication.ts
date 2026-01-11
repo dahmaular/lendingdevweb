@@ -17,6 +17,7 @@ export interface OnboardingRequest {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   productId: string;
 }
 

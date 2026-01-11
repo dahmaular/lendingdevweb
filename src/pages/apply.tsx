@@ -4,6 +4,7 @@ import {
   Building2,
   User,
   Mail,
+  Phone,
   Calendar,
   KeyRound,
   ArrowRight,
@@ -1271,6 +1272,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [firstName, setFirstName] = useState<string>("");
   const [employer, setEmployer] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
   const [resendOTP, setResendOTP] = useState<boolean>(false);
@@ -1398,7 +1400,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !firstName || !lastName) {
+    if (!email || !firstName || !lastName || !phoneNumber) {
       setModal({
         open: true,
         message: "Please fill in all fields.",
@@ -1438,6 +1440,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         employer,
         firstName,
         lastName,
+        phoneNumber,
         productId: "372e9a1d-c714-4fc2-b44a-3eeb8ebda4c1",
       }).unwrap();
 
@@ -1830,6 +1833,17 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     icon={<Mail size={20} />}
                     required
+                  />
+
+                  <ModernInput
+                    label="Phone Number"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    icon={<Phone size={20} />}
+                    required
+                    maxLength={11}
                   />
 
                   <ModernInput
