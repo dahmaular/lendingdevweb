@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload,
@@ -11,7 +12,10 @@ import {
   Sparkles,
   Shield,
 } from "lucide-react";
-import { useUploadSignedOfferLetterMutation } from "../store/services/baseApi";
+import {
+  useUploadIDMutation,
+  useUploadSignedOfferLetterMutation,
+} from "../store/services/baseApi";
 import { colors, shadows } from "../theme";
 import Logo from "../assets/logo.jpeg";
 
@@ -107,14 +111,19 @@ const styles = {
 };
 
 const UploadOfferLetter: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [uploadSignedOfferLetter, { isLoading }] =
+  const [uploadDocument, { isLoading: isUploadingDocument }] =
+    useUploadIDMutation();
+  const [uploadSignedOfferLetter, { isLoading: isUploadingOfferLetter }] =
     useUploadSignedOfferLetterMutation();
+
+  const isLoading = isUploadingDocument || isUploadingOfferLetter;
 
   const handleFileSelect = (file: File) => {
     // Validate file type
@@ -170,22 +179,45 @@ const UploadOfferLetter: React.FC = () => {
   const handleUpload = async () => {
     if (!uploadFile) return;
 
-    const loanId = localStorage.getItem("loanId");
+    // Get loan_id from query params, fallback to localStorage
+    const loanId =
+      searchParams.get("loan_id") || localStorage.getItem("loanId");
     if (!loanId) {
       setError("Loan ID not found. Please start the application process.");
       return;
     }
 
+    console.log("Uploading file for loan ID:", loanId);
+
     try {
-      // Convert file to base64
+      // Step 1: Convert file to base64
       const base64String = await fileToBase64(uploadFile);
       const fileExtension = getFileExtension(uploadFile);
 
+      // Step 2: Upload document to get document ID
+      const uploadDocResponse = await uploadDocument({
+        documentName: uploadFile.name,
+        base64String,
+        fileExtension: "pdf",
+      }).unwrap();
+
+      console.log("Upload document response:", uploadDocResponse);
+
+      if (!uploadDocResponse.data?.id) {
+        throw new Error("Failed to upload document");
+      }
+
+      const documentId = uploadDocResponse.data.id;
+
+      console.log("Obtained document ID:", {
+        loanId,
+        signedOfferLetterDocumentId: documentId,
+      });
+
+      // Step 3: Upload signed offer letter using document ID
       const response = await uploadSignedOfferLetter({
         loanId,
-        documentName: `Signed_Offer_Letter_${Date.now()}`,
-        base64String,
-        fileExtension,
+        signedOfferLetterDocumentId: documentId,
       }).unwrap();
 
       if (response.success) {

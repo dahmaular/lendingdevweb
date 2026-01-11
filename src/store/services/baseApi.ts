@@ -267,9 +267,7 @@ export const baseApi = createApi({
       },
       {
         loanId: string;
-        documentName: string;
-        base64String: string;
-        fileExtension: string;
+        signedOfferLetterDocumentId: string;
       }
     >({
       query: ({ loanId, ...body }) => ({
