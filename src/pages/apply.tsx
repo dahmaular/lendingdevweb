@@ -593,6 +593,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
             justifyContent: "center",
             zIndex: 2000,
             padding: "20px",
+            overflowY: "auto",
           }}
         >
           <motion.div
@@ -608,6 +609,10 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
               width: "100%",
               boxShadow: shadows.xl,
               overflow: "hidden",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              margin: "auto",
             }}
           >
             {/* Gradient Header */}
@@ -617,6 +622,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
                 padding: "32px",
                 position: "relative",
                 overflow: "hidden",
+                flexShrink: 0,
               }}
             >
               {/* Decorative circles */}
@@ -693,7 +699,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
             </div>
 
             {/* Content */}
-            <div style={{ padding: "32px" }}>
+            <div style={{ padding: "32px", overflowY: "auto", flexGrow: 1 }}>
               <div
                 style={{
                   background: `linear-gradient(135deg, ${colors.primary[50]} 0%, ${colors.secondary[50]} 100%)`,
@@ -1846,15 +1852,34 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                     maxLength={11}
                   />
 
-                  <ModernInput
-                    label="Date of Birth"
-                    type="date"
-                    placeholder="dd/mm/yyyy"
-                    value={dob.toISOString().split("T")[0]}
-                    onChange={(e) => setDob(new Date(e.target.value))}
-                    icon={<Calendar size={20} />}
-                    required
-                  />
+                  <div style={{ marginBottom: "20px" }}>
+                    <label style={styles.label}>Date of Birth</label>
+                    <div style={{ position: "relative" }}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "16px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: colors.neutral[400],
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      >
+                        <Calendar size={20} />
+                      </div>
+                      <input
+                        type="date"
+                        value={dob.toISOString().split("T")[0]}
+                        onChange={(e) => setDob(new Date(e.target.value))}
+                        required
+                        style={{
+                          ...styles.input,
+                          paddingLeft: "48px",
+                        }}
+                      />
+                    </div>
+                  </div>
 
                   {isOTP && (
                     <motion.div
