@@ -192,7 +192,7 @@ const UploadOfferLetter: React.FC = () => {
     try {
       // Step 1: Convert file to base64
       const base64String = await fileToBase64(uploadFile);
-      const fileExtension = getFileExtension(uploadFile);
+      // const fileExtension = getFileExtension(uploadFile);
 
       // Step 2: Upload document to get document ID
       const uploadDocResponse = await uploadDocument({
@@ -250,6 +250,7 @@ const UploadOfferLetter: React.FC = () => {
     });
   };
 
+  /* Unused helper function - keeping for potential future use
   const getFileExtension = (file: File): string => {
     const fileNameParts = file.name.split(".");
     if (fileNameParts.length > 1) {
@@ -263,6 +264,7 @@ const UploadOfferLetter: React.FC = () => {
     };
     return mimeToExt[file.type] || "";
   };
+  */
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";

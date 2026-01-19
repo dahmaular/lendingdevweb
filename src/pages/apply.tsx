@@ -1024,7 +1024,7 @@ const ModernSelect: React.FC<{
     if (!searchQuery) return options.slice(0, 100);
     return options
       .filter((opt) =>
-        opt.name.toLowerCase().includes(searchQuery.toLowerCase())
+        opt.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .slice(0, 100);
   }, [options, searchQuery]);
@@ -1288,7 +1288,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [showResumeForm, setShowResumeForm] = useState<boolean>(false);
   const [resumeEmail, setResumeEmail] = useState<string>("");
   const [resumeStatus, setResumeStatus] = useState<CurrentStatusData | null>(
-    null
+    null,
   );
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
@@ -1852,9 +1852,21 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                     maxLength={11}
                   />
 
-                  <div style={{ marginBottom: "20px" }}>
+                  <div
+                    style={{
+                      marginBottom: "20px",
+                      width: "100%",
+                      maxWidth: "100%",
+                    }}
+                  >
                     <label style={styles.label}>Date of Birth</label>
-                    <div style={{ position: "relative" }}>
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        maxWidth: "100%",
+                      }}
+                    >
                       <div
                         style={{
                           position: "absolute",
@@ -1876,6 +1888,9 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                         style={{
                           ...styles.input,
                           paddingLeft: "48px",
+                          width: "100%",
+                          maxWidth: "100%",
+                          boxSizing: "border-box",
                         }}
                       />
                     </div>
@@ -2151,7 +2166,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
           const form = document.querySelector("form");
           if (form) {
             form.dispatchEvent(
-              new Event("submit", { cancelable: true, bubbles: true })
+              new Event("submit", { cancelable: true, bubbles: true }),
             );
           }
         }}
