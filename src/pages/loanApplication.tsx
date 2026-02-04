@@ -128,14 +128,14 @@ const styles = {
       background: completed
         ? colors.status.success
         : active
-        ? colors.primary.gradient
-        : "#E2E8F0",
+          ? colors.primary.gradient
+          : "#E2E8F0",
       color: completed || active ? "#FFFFFF" : colors.text.muted,
       fontSize: "14px",
       fontWeight: 600,
       transition: "all 0.3s ease",
       boxShadow: active ? shadows.glow : "none",
-    } as React.CSSProperties),
+    }) as React.CSSProperties,
 
   stepLine: (completed: boolean) =>
     ({
@@ -145,7 +145,7 @@ const styles = {
       borderRadius: "2px",
       marginLeft: "4px",
       marginRight: "4px",
-    } as React.CSSProperties),
+    }) as React.CSSProperties,
 
   card: {
     background: colors.background.card,
@@ -280,7 +280,7 @@ const styles = {
       cursor: "pointer",
       transition: "all 0.2s ease",
       textAlign: "center" as const,
-    } as React.CSSProperties),
+    }) as React.CSSProperties,
 
   breakdownCard: {
     background: "#F8FAFC",
@@ -458,6 +458,7 @@ const LoanApplication: React.FC = () => {
   const [duration, setDuration] = useState(1);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState("");
+  const [offerLetterAccepted, setOfferLetterAccepted] = useState(false);
 
   // Interest rate (example: 5% per month)
   const interestRate = 0.05;
@@ -548,7 +549,7 @@ const LoanApplication: React.FC = () => {
         };
         localStorage.setItem(
           "loanDetails",
-          JSON.stringify(loanDetailsForConfirmation)
+          JSON.stringify(loanDetailsForConfirmation),
         );
         navigate("/confirmation");
       }
@@ -840,6 +841,48 @@ const LoanApplication: React.FC = () => {
             </div>
           </div>
 
+          {/* Offer Letter Acceptance */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              padding: "20px",
+              background: "#F0F9FF",
+              borderRadius: "12px",
+              marginTop: "24px",
+              border: "1px solid #BAE6FD",
+            }}
+          >
+            <input
+              type="checkbox"
+              id="offerLetterAccept"
+              checked={offerLetterAccepted}
+              onChange={(e) => setOfferLetterAccepted(e.target.checked)}
+              style={{
+                width: "18px",
+                height: "18px",
+                accentColor: colors.primary.main,
+                cursor: "pointer",
+                marginTop: "2px",
+              }}
+            />
+            <label
+              htmlFor="offerLetterAccept"
+              style={{
+                fontSize: "14px",
+                color: colors.text.primary,
+                lineHeight: 1.6,
+                cursor: "pointer",
+                userSelect: "none" as const,
+              }}
+            >
+              <strong>I accept the loan offer letter</strong> and agree to the
+              terms and conditions outlined in the loan agreement. I understand
+              the repayment schedule and all associated fees.
+            </label>
+          </div>
+
           <div style={styles.buttonGroup}>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -857,10 +900,10 @@ const LoanApplication: React.FC = () => {
               style={{
                 ...styles.button,
                 flex: 2,
-                opacity: isLoading ? 0.7 : 1,
+                opacity: isLoading || !offerLetterAccepted ? 0.7 : 1,
               }}
               onClick={handleSubmit}
-              disabled={isLoading || loanAmount < 5000}
+              disabled={isLoading || loanAmount < 5000 || !offerLetterAccepted}
             >
               {isLoading ? (
                 <>
