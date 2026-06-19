@@ -534,6 +534,8 @@ const LoanApplication: React.FC = () => {
         loanId,
         loanAmount,
         tenor: duration,
+        acceptOfferLetter: offerLetterAccepted,
+        monoCustomerId: localStorage.getItem("monoCustomerId") || "",
       }).unwrap();
 
       if (response.success) {

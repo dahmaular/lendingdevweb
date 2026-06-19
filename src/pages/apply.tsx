@@ -28,7 +28,6 @@ import {
   useGetCurrentStatusMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
-import { EMPLOYERS } from "./personalDetails";
 import Logo from "../assets/logo.jpeg";
 import { colors, shadows } from "../theme";
 
@@ -1276,8 +1275,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [email, setEmail] = useState<string>("");
   const [dob, setDob] = useState<Date>(eighteenYearsAgo);
   const [firstName, setFirstName] = useState<string>("");
-  const [employer, setEmployer] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
+const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
@@ -1443,7 +1441,6 @@ const LoginPage: React.FC<LoginPageProps> = () => {
     try {
       const response = await onboarding1({
         email,
-        employer,
         firstName,
         lastName,
         phoneNumber,
@@ -1796,13 +1793,13 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                 </div>
               ) : (
                 <>
-                  <ModernSelect
+                  {/* <ModernSelect
                     options={EMPLOYERS}
                     value={employer}
                     onChange={setEmployer}
                     placeholder="Select your employer"
                     label="Employer"
-                  />
+                  /> */}
 
                   <div
                     style={{

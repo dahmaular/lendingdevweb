@@ -13,7 +13,7 @@ export interface LoanApplication {
 export type LoanApplicationStatus = "pending" | "approved" | "rejected";
 
 export interface OnboardingRequest {
-  employer: string;
+  // employer: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -44,8 +44,10 @@ export interface OnboardingResponse {
 export interface SalaryHistoryReviewRequest {
   bankCode: string;
   accountNo: string;
-  bvn: string;
+  bvn?: string;
+  nin?: string;
   loanId: string;
+  identityType: string;
 }
 
 export interface SavePersonalDetailsRequest {
@@ -59,6 +61,8 @@ export interface SubmitLoan {
   loanId: string;
   loanAmount: number;
   tenor: number;
+  acceptOfferLetter: boolean;
+  monoCustomerId: string;
 }
 
 export interface SubmitLoanResponse {

@@ -256,6 +256,19 @@ export const baseApi = createApi({
         body,
       }),
     }),
+    getBanks: builder.query<{ code: string; name: string }[], void>({
+      query: () => ({ url: "/Mono/banks", method: "GET" }),
+      transformResponse: (response: unknown) => {
+        const r = response as Record<string, unknown>;
+        const inner = r?.data as Record<string, unknown> | undefined;
+        const list = inner?.data;
+        if (!Array.isArray(list)) return [];
+        return list.map((b: { bank_code: string; name: string }) => ({
+          code: b.bank_code,
+          name: b.name,
+        }));
+      },
+    }),
     // Upload signed offer letter
     uploadSignedOfferLetter: builder.mutation<
       {
@@ -296,4 +309,5 @@ export const {
   useGetCurrentStatusMutation,
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
+  useGetBanksQuery,
 } = baseApi;
