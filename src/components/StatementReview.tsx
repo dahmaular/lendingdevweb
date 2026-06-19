@@ -333,7 +333,7 @@ const BankSelect: React.FC<{
 }> = ({ value, onChange, banks, isLoading }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const safeBanks = Array.isArray(banks) ? banks : [];
+  const safeBanks = useMemo(() => (Array.isArray(banks) ? banks : []), [banks]);
   const filteredBanks = useMemo(() => {
     if (!searchQuery) return safeBanks;
     return safeBanks.filter((bank) =>
