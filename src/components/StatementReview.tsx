@@ -23,30 +23,11 @@ import {
   useSalaryReviewMutation,
   useSalaryReviewOTPMutation,
   useVerifyResendBVNOtpMutation,
+  useGetBanksQuery,
 } from "../store/services/baseApi";
 import Logo from "../assets/logo.jpeg";
 import { colors, shadows } from "../theme";
 
-const NIGERIAN_BANKS = [
-  { code: "044", name: "Access Bank" },
-  { code: "023", name: "Citibank" },
-  { code: "063", name: "Access Bank (Diamond)" },
-  { code: "050", name: "Ecobank" },
-  { code: "070", name: "Fidelity Bank" },
-  { code: "011", name: "First Bank" },
-  { code: "214", name: "FCMB" },
-  { code: "058", name: "Guaranty Trust Bank" },
-  { code: "030", name: "Heritage Bank" },
-  { code: "082", name: "Keystone Bank" },
-  { code: "076", name: "Polaris Bank" },
-  { code: "221", name: "Stanbic IBTC" },
-  { code: "232", name: "Sterling Bank" },
-  { code: "032", name: "Union Bank" },
-  { code: "033", name: "United Bank for Africa" },
-  { code: "215", name: "Unity Bank" },
-  { code: "035", name: "Wema Bank" },
-  { code: "057", name: "Zenith Bank" },
-];
 
 const styles = {
   container: {
@@ -347,16 +328,19 @@ const ModernModal: React.FC<ModalProps> = ({
 const BankSelect: React.FC<{
   value: string;
   onChange: (value: string) => void;
-}> = ({ value, onChange }) => {
+  banks: { code: string; name: string }[];
+  isLoading?: boolean;
+}> = ({ value, onChange, banks, isLoading }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const safeBanks = useMemo(() => (Array.isArray(banks) ? banks : []), [banks]);
   const filteredBanks = useMemo(() => {
-    if (!searchQuery) return NIGERIAN_BANKS;
-    return NIGERIAN_BANKS.filter((bank) =>
+    if (!searchQuery) return safeBanks;
+    return safeBanks.filter((bank) =>
       bank.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
-  const selectedBank = NIGERIAN_BANKS.find((bank) => bank.code === value);
+  }, [searchQuery, safeBanks]);
+  const selectedBank = safeBanks.find((bank) => bank.code === value);
 
   return (
     <div style={{ marginBottom: "20px", position: "relative" }}>
@@ -386,7 +370,9 @@ const BankSelect: React.FC<{
               color: selectedBank ? colors.neutral[900] : colors.neutral[400],
             }}
           >
-            {selectedBank?.name || "Select your bank"}
+            {isLoading
+              ? "Loading banks..."
+              : selectedBank?.name || "Select your bank"}
           </span>
         </div>
         <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
@@ -573,7 +559,9 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 }) => {
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [accountNumber, setAccountNumber] = useState<string>("");
+  const [verificationMethod, setVerificationMethod] = useState<"bvn" | "nin">("bvn");
   const [bvn, setBvn] = useState<string>("");
+  const [nin, setNin] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
   const [resendOTP, setResendOTP] = useState<boolean>(false);
@@ -583,6 +571,8 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     message: string;
     title?: string;
   }>({ open: false, message: "", title: undefined });
+
+  const { data: banksData = [], isLoading: banksLoading } = useGetBanksQuery();
 
   const [salaryReview, { isLoading }] = useSalaryReviewMutation();
   const [salaryReviewOTP, { isLoading: verifyLoading }] =
@@ -607,10 +597,16 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     if (value.length <= 11) setBvn(value);
   };
 
+  const handleNinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    if (value.length <= 11) setNin(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const loanId = localStorage.getItem("loanId");
-    if (!selectedBank || !accountNumber || !bvn) {
+    const idValue = verificationMethod === "bvn" ? bvn : nin;
+    if (!selectedBank || !accountNumber || !idValue) {
       setModal({
         open: true,
         message: "Please fill in all fields.",
@@ -622,16 +618,21 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
       const response = await salaryReview({
         bankCode: selectedBank,
         accountNo: accountNumber,
-        bvn: bvn,
+        ...(verificationMethod === "bvn" ? { bvn } : { nin }),
         loanId: loanId || "",
+        identityType: verificationMethod,
       }).unwrap();
       if (response?.success) {
-        setIsOTP(true);
-        setModal({
-          open: true,
-          message: "OTP sent to your phone. Please verify.",
-          title: "OTP Sent",
-        });
+        if (verificationMethod === "nin") {
+          onNext();
+        } else {
+          setIsOTP(true);
+          setModal({
+            open: true,
+            message: "OTP sent to your phone. Please verify.",
+            title: "OTP Sent",
+          });
+        }
       } else {
         setResendOTP(true);
         setModal({
@@ -683,7 +684,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 
   const handleResendOTP = async () => {
     try {
-      const response = await resentBVNOtp({ bvn }).unwrap();
+      const response = await resentBVNOtp({ bvn: verificationMethod === "bvn" ? bvn : nin }).unwrap();
       if (response?.success) {
         setOtpVerified(false);
         setModal({
@@ -776,7 +777,12 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
               </p>
             </div>
             <form onSubmit={isOTP ? handleOTPSubmit : handleSubmit}>
-              <BankSelect value={selectedBank} onChange={setSelectedBank} />
+              <BankSelect
+                value={selectedBank}
+                onChange={setSelectedBank}
+                banks={banksData}
+                isLoading={banksLoading}
+              />
               <ModernInput
                 label="Account Number"
                 type="text"
@@ -788,17 +794,115 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
                 inputMode="numeric"
                 required
               />
-              <ModernInput
-                label="BVN"
-                type="text"
-                placeholder="Enter 11-digit BVN"
-                value={bvn}
-                onChange={handleBvnChange}
-                icon={<Hash size={20} />}
-                maxLength={11}
-                inputMode="numeric"
-                required
-              />
+              {/* Verification method toggle */}
+              <div style={{ marginBottom: "20px" }}>
+                <label style={styles.label}>Verification Method</label>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  {(["bvn", "nin"] as const).map((method) => {
+                    const selected = verificationMethod === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setVerificationMethod(method)}
+                        style={{
+                          flex: 1,
+                          padding: "14px 16px",
+                          borderRadius: "12px",
+                          border: `2px solid ${selected ? colors.primary[500] : colors.neutral[200]}`,
+                          background: selected ? colors.primary[50] : colors.neutral[50],
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          transition: "all 0.2s ease",
+                          boxShadow: selected ? `0 0 0 4px ${colors.primary[100]}` : "none",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            borderRadius: "50%",
+                            border: `2px solid ${selected ? colors.primary[500] : colors.neutral[300]}`,
+                            background: selected ? colors.primary[500] : "transparent",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          {selected && (
+                            <div
+                              style={{
+                                width: "6px",
+                                height: "6px",
+                                borderRadius: "50%",
+                                background: "#fff",
+                              }}
+                            />
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: selected ? colors.primary[700] : colors.neutral[600],
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {method}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {verificationMethod === "bvn" ? (
+                  <motion.div
+                    key="bvn"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ModernInput
+                      label="BVN"
+                      type="text"
+                      placeholder="Enter 11-digit BVN"
+                      value={bvn}
+                      onChange={handleBvnChange}
+                      icon={<Hash size={20} />}
+                      maxLength={11}
+                      inputMode="numeric"
+                      required
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="nin"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ModernInput
+                      label="NIN"
+                      type="text"
+                      placeholder="Enter 11-digit NIN"
+                      value={nin}
+                      onChange={handleNinChange}
+                      icon={<Hash size={20} />}
+                      maxLength={11}
+                      inputMode="numeric"
+                      required
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {isOTP && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}

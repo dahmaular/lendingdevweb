@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -12,7 +12,6 @@ import {
   Sparkles,
   Shield,
   Clock,
-  ChevronDown,
   Search,
   Check,
   X,
@@ -28,7 +27,6 @@ import {
   useGetCurrentStatusMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
-import { EMPLOYERS } from "./personalDetails";
 import Logo from "../assets/logo.jpeg";
 import { colors, shadows } from "../theme";
 
@@ -1005,204 +1003,6 @@ const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
 };
 
 // Custom Select Component
-interface SelectOption {
-  id: string;
-  name: string;
-}
-
-const ModernSelect: React.FC<{
-  options: SelectOption[];
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  label: string;
-}> = ({ options, value, onChange, placeholder, label }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredOptions = useMemo(() => {
-    if (!searchQuery) return options.slice(0, 100);
-    return options
-      .filter((opt) =>
-        opt.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-      .slice(0, 100);
-  }, [options, searchQuery]);
-
-  const selectedOption = options.find((opt) => opt.id === value);
-
-  return (
-    <div style={{ marginBottom: "20px", position: "relative" }}>
-      <label style={styles.label}>{label}</label>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          ...styles.input,
-          paddingLeft: "48px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: isOpen ? "#fff" : colors.neutral[50],
-          borderColor: isOpen ? colors.primary[500] : colors.neutral[200],
-          boxShadow: isOpen ? `0 0 0 4px ${colors.primary[100]}` : "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Building2
-            size={20}
-            color={colors.neutral[400]}
-            style={{ position: "absolute", left: "16px" }}
-          />
-          <span
-            style={{
-              color: selectedOption ? colors.neutral[900] : colors.neutral[400],
-            }}
-          >
-            {selectedOption?.name || placeholder}
-          </span>
-        </div>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-          <ChevronDown size={20} color={colors.neutral[400]} />
-        </motion.div>
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              marginTop: "8px",
-              background: "#fff",
-              borderRadius: "16px",
-              boxShadow: shadows.xl,
-              border: `1px solid ${colors.neutral[200]}`,
-              zIndex: 100,
-              overflow: "hidden",
-              maxHeight: "320px",
-            }}
-          >
-            <div
-              style={{
-                padding: "12px",
-                borderBottom: `1px solid ${colors.neutral[100]}`,
-              }}
-            >
-              <div style={{ position: "relative" }}>
-                <Search
-                  size={18}
-                  color={colors.neutral[400]}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search employers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px 10px 40px",
-                    fontSize: "14px",
-                    border: `1px solid ${colors.neutral[200]}`,
-                    borderRadius: "8px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                  autoFocus
-                />
-              </div>
-            </div>
-            <div style={{ maxHeight: "240px", overflowY: "auto" }}>
-              {filteredOptions.length === 0 ? (
-                <div
-                  style={{
-                    padding: "16px",
-                    textAlign: "center",
-                    color: colors.neutral[500],
-                  }}
-                >
-                  No employers found
-                </div>
-              ) : (
-                filteredOptions.map((option) => (
-                  <div
-                    key={option.id}
-                    onClick={() => {
-                      onChange(option.id);
-                      setIsOpen(false);
-                      setSearchQuery("");
-                    }}
-                    style={{
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      background:
-                        value === option.id
-                          ? colors.primary[50]
-                          : "transparent",
-                      borderLeft:
-                        value === option.id
-                          ? `3px solid ${colors.primary[500]}`
-                          : "3px solid transparent",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (value !== option.id) {
-                        e.currentTarget.style.background = colors.neutral[50];
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (value !== option.id) {
-                        e.currentTarget.style.background = "transparent";
-                      }
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: colors.neutral[800],
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {option.name}
-                    </span>
-                    {value === option.id && (
-                      <Check size={16} color={colors.primary[500]} />
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 99 }}
-          onClick={() => {
-            setIsOpen(false);
-            setSearchQuery("");
-          }}
-        />
-      )}
-    </div>
-  );
-};
 
 // Input Component
 const ModernInput: React.FC<{
@@ -1276,8 +1076,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [email, setEmail] = useState<string>("");
   const [dob, setDob] = useState<Date>(eighteenYearsAgo);
   const [firstName, setFirstName] = useState<string>("");
-  const [employer, setEmployer] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
+const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
@@ -1304,8 +1103,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [verifyOtp, { isLoading: verifyLoading }] = useVerifyOtpMutation();
   const [resendEmailOtp, { isLoading: resendLoading, data: resendData }] =
     useResendEmailOtpMutation();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [verifyResendEmailOtp, { isLoading: verifyResendLoading }] =
+  const [, { isLoading: verifyResendLoading }] =
     useVerifyResendEmailOtpMutation();
   const [getCurrentStatus, { isLoading: statusLoading }] =
     useGetCurrentStatusMutation();
@@ -1443,7 +1241,6 @@ const LoginPage: React.FC<LoginPageProps> = () => {
     try {
       const response = await onboarding1({
         email,
-        employer,
         firstName,
         lastName,
         phoneNumber,
@@ -1796,14 +1593,6 @@ const LoginPage: React.FC<LoginPageProps> = () => {
                 </div>
               ) : (
                 <>
-                  <ModernSelect
-                    options={EMPLOYERS}
-                    value={employer}
-                    onChange={setEmployer}
-                    placeholder="Select your employer"
-                    label="Employer"
-                  />
-
                   <div
                     style={{
                       display: "grid",
