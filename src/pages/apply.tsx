@@ -1092,6 +1092,7 @@ const [lastName, setLastName] = useState<string>("");
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
   const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
+  const [activeAppModal, setActiveAppModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -1181,6 +1182,32 @@ const [lastName, setLastName] = useState<string>("");
     }
   };
 
+  const handleProceedWithActiveApp = async () => {
+    try {
+      const response = await getCurrentStatus({ email }).unwrap();
+      if (response.success && response.data) {
+        setResumeStatus(response.data);
+        localStorage.setItem("loanId", response.data.loanId);
+        setActiveAppModal({ open: false, message: "" });
+        setShowResumeModal(true);
+      } else {
+        setActiveAppModal({ open: false, message: "" });
+        setModal({
+          open: true,
+          message: "Unable to retrieve your application. Please try again.",
+          title: "Error",
+        });
+      }
+    } catch {
+      setActiveAppModal({ open: false, message: "" });
+      setModal({
+        open: true,
+        message: "Unable to retrieve your application. Please try again.",
+        title: "Error",
+      });
+    }
+  };
+
   const navigateToStep = (stepNumber: number) => {
     const stepRoutes: { [key: number]: string } = {
       1: "/",
@@ -1260,16 +1287,22 @@ const [lastName, setLastName] = useState<string>("");
         setLoadingState(false);
         setIsOTP(true);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error during onboarding:", error);
-      setResendOTP(true);
-      setOtp("");
-      setModal({
-        open: true,
-        message: "An error occurred during onboarding. Please try again.",
-        title: "Onboarding Error",
-      });
       setLoadingState(false);
+      const errData = (error as { data?: { message?: string } })?.data;
+      const errMsg = errData?.message ?? "";
+      if (errMsg.toLowerCase().includes("active application")) {
+        setActiveAppModal({ open: true, message: errMsg });
+      } else {
+        setResendOTP(true);
+        setOtp("");
+        setModal({
+          open: true,
+          message: errMsg || "An error occurred during onboarding. Please try again.",
+          title: "Onboarding Error",
+        });
+      }
     }
   };
 
@@ -2009,6 +2042,121 @@ const [lastName, setLastName] = useState<string>("");
         }}
         onClose={() => setShowResumeModal(false)}
       />
+
+      {/* Active Application Modal */}
+      <AnimatePresence>
+        {activeAppModal.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              style={{
+                background: "#fff",
+                borderRadius: "24px",
+                padding: "32px",
+                maxWidth: "420px",
+                width: "100%",
+                boxShadow: shadows.xl,
+              }}
+            >
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <RotateCcw size={24} color={colors.primary[600]} />
+              </div>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: colors.neutral[900],
+                  marginBottom: "8px",
+                }}
+              >
+                Active Application Found
+              </h3>
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: colors.neutral[600],
+                  lineHeight: 1.6,
+                  marginBottom: "24px",
+                }}
+              >
+                {activeAppModal.message}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <button
+                  onClick={handleProceedWithActiveApp}
+                  disabled={statusLoading}
+                  style={{
+                    ...styles.button,
+                    opacity: statusLoading ? 0.7 : 1,
+                    cursor: statusLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {statusLoading ? (
+                    <>
+                      <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw size={18} />
+                      Proceed with Application
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveAppModal({ open: false, message: "" })}
+                  style={{
+                    width: "100%",
+                    padding: "14px 24px",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    border: `2px solid ${colors.neutral[200]}`,
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    background: "#fff",
+                    color: colors.neutral[700],
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  Start a New One
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Global Styles for animations */}
       <style>{`
