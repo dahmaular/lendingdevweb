@@ -89,7 +89,8 @@ export const baseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl:
     // "http://localhost:5275/api/v1",
-      "https://staginlending-fvexbmfhawe7e6ad.southafricanorth-01.azurewebsites.net/api/v1",
+      // "https://staginlending-fvexbmfhawe7e6ad.southafricanorth-01.azurewebsites.net/api/v1",
+      "https://devpayprod-cvd7axbkemare5dn.southafricanorth-01.azurewebsites.net/api/v1",
     prepareHeaders: (headers) => {
       // Add any required headers here
       headers.set("Content-Type", "application/json");
