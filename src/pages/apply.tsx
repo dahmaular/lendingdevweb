@@ -1271,7 +1271,7 @@ const [lastName, setLastName] = useState<string>("");
         firstName,
         lastName,
         phoneNumber,
-        productId: "372e9a1d-c714-4fc2-b44a-3eeb8ebda4c1",
+        productId: "00487268-6698-4fe4-bda2-39fc32c60a1d",
       }).unwrap();
 
       if (response.success) {

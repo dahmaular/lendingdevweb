@@ -55,6 +55,7 @@ export interface SavePersonalDetailsRequest {
   idNumber: string;
   imageIds: string[];
   loanId: string;
+  bvn?: string;
 }
 
 export interface SubmitLoan {

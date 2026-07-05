@@ -1668,11 +1668,14 @@ const PersonalDetails: React.FC = () => {
         console.log("Back document uploaded. ID:", backId);
       }
 
+      const bvn = localStorage.getItem("bvn");
+
       const formDataToSubmit = {
         address: formData.addressLine,
         idNumber: formData.idNumber,
         imageIds: imageIds,
         loanId: loanId,
+        ...(bvn ? { bvn } : {}),
       };
       console.log("Submitting form data:", formDataToSubmit);
 

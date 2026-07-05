@@ -559,9 +559,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 }) => {
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [accountNumber, setAccountNumber] = useState<string>("");
-  const [verificationMethod, setVerificationMethod] = useState<"bvn" | "nin">("bvn");
   const [bvn, setBvn] = useState<string>("");
-  const [nin, setNin] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
   const [resendOTP, setResendOTP] = useState<boolean>(false);
@@ -597,16 +595,10 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     if (value.length <= 11) setBvn(value);
   };
 
-  const handleNinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    if (value.length <= 11) setNin(value);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const loanId = localStorage.getItem("loanId");
-    const idValue = verificationMethod === "bvn" ? bvn : nin;
-    if (!selectedBank || !accountNumber || !idValue) {
+    if (!selectedBank || !accountNumber || !bvn) {
       setModal({
         open: true,
         message: "Please fill in all fields.",
@@ -618,21 +610,18 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
       const response = await salaryReview({
         bankCode: selectedBank,
         accountNo: accountNumber,
-        ...(verificationMethod === "bvn" ? { bvn } : { nin }),
+        bvn,
         loanId: loanId || "",
-        identityType: verificationMethod,
+        identityType: "bvn",
       }).unwrap();
       if (response?.success) {
-        if (verificationMethod === "nin") {
-          onNext();
-        } else {
-          setIsOTP(true);
-          setModal({
-            open: true,
-            message: "OTP sent to your phone. Please verify.",
-            title: "OTP Sent",
-          });
-        }
+        localStorage.setItem("bvn", bvn);
+        setIsOTP(true);
+        setModal({
+          open: true,
+          message: "OTP sent to your phone. Please verify.",
+          title: "OTP Sent",
+        });
       } else {
         setResendOTP(true);
         setModal({
@@ -684,7 +673,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 
   const handleResendOTP = async () => {
     try {
-      const response = await resentBVNOtp({ bvn: verificationMethod === "bvn" ? bvn : nin }).unwrap();
+      const response = await resentBVNOtp({ bvn }).unwrap();
       if (response?.success) {
         setOtpVerified(false);
         setModal({
@@ -794,115 +783,17 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
                 inputMode="numeric"
                 required
               />
-              {/* Verification method toggle */}
-              <div style={{ marginBottom: "20px" }}>
-                <label style={styles.label}>Verification Method</label>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  {(["bvn", "nin"] as const).map((method) => {
-                    const selected = verificationMethod === method;
-                    return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setVerificationMethod(method)}
-                        style={{
-                          flex: 1,
-                          padding: "14px 16px",
-                          borderRadius: "12px",
-                          border: `2px solid ${selected ? colors.primary[500] : colors.neutral[200]}`,
-                          background: selected ? colors.primary[50] : colors.neutral[50],
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          transition: "all 0.2s ease",
-                          boxShadow: selected ? `0 0 0 4px ${colors.primary[100]}` : "none",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            borderRadius: "50%",
-                            border: `2px solid ${selected ? colors.primary[500] : colors.neutral[300]}`,
-                            background: selected ? colors.primary[500] : "transparent",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            transition: "all 0.2s ease",
-                          }}
-                        >
-                          {selected && (
-                            <div
-                              style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                background: "#fff",
-                              }}
-                            />
-                          )}
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color: selected ? colors.primary[700] : colors.neutral[600],
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {method}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <AnimatePresence mode="wait">
-                {verificationMethod === "bvn" ? (
-                  <motion.div
-                    key="bvn"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ModernInput
-                      label="BVN"
-                      type="text"
-                      placeholder="Enter 11-digit BVN"
-                      value={bvn}
-                      onChange={handleBvnChange}
-                      icon={<Hash size={20} />}
-                      maxLength={11}
-                      inputMode="numeric"
-                      required
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="nin"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ModernInput
-                      label="NIN"
-                      type="text"
-                      placeholder="Enter 11-digit NIN"
-                      value={nin}
-                      onChange={handleNinChange}
-                      icon={<Hash size={20} />}
-                      maxLength={11}
-                      inputMode="numeric"
-                      required
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <ModernInput
+                label="BVN"
+                type="text"
+                placeholder="Enter 11-digit BVN"
+                value={bvn}
+                onChange={handleBvnChange}
+                icon={<Hash size={20} />}
+                maxLength={11}
+                inputMode="numeric"
+                required
+              />
               {isOTP && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
