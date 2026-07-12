@@ -1495,6 +1495,8 @@ const PersonalDetails: React.FC = () => {
     const requiresExpiry =
       formData.identificationType === "International Passport" ||
       formData.identificationType === "Driver's License";
+    const isPassport =
+      formData.identificationType === "International Passport";
     const fields = ["addressLine", "identificationType", "idNumber"];
     if (requiresExpiry) {
       fields.push("expiryDate");
@@ -1510,7 +1512,7 @@ const PersonalDetails: React.FC = () => {
       }));
       isValid = false;
     }
-    if (!backDocument) {
+    if (!isPassport && !backDocument) {
       setErrors((prev) => ({
         ...prev,
         backDocument: "Please upload the back of your ID document",
@@ -1692,6 +1694,12 @@ const PersonalDetails: React.FC = () => {
             response.data.maxLoanEligible.toString()
           );
           console.log("Stored maxLoanEligible:", response.data.maxLoanEligible);
+        }
+
+        // Store monoCustomerId so step4 (loan submission) can send it
+        if (response.data?.monoCustomerId) {
+          localStorage.setItem("monoCustomerId", response.data.monoCustomerId);
+          console.log("Stored monoCustomerId:", response.data.monoCustomerId);
         }
 
         navigate("/loan-application");
@@ -1922,7 +1930,11 @@ const PersonalDetails: React.FC = () => {
 
             {/* Front Document Upload */}
             <div style={styles.inputGroup}>
-              <label style={styles.label}>ID Document (Front) *</label>
+              <label style={styles.label}>
+                {formData.identificationType === "International Passport"
+                  ? "ID Document *"
+                  : "ID Document (Front) *"}
+              </label>
               <input
                 type="file"
                 ref={frontFileInputRef}
@@ -2043,7 +2055,8 @@ const PersonalDetails: React.FC = () => {
               )}
             </div>
 
-            {/* Back Document Upload */}
+            {/* Back Document Upload - not required for International Passport */}
+            {formData.identificationType !== "International Passport" && (
             <div style={styles.inputGroup}>
               <label style={styles.label}>ID Document (Back) *</label>
               <input
@@ -2165,6 +2178,7 @@ const PersonalDetails: React.FC = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           {errors.submit && (

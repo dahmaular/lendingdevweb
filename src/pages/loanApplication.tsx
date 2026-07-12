@@ -20,8 +20,10 @@ import {
   AlertCircle,
   Sparkles,
   Shield,
+  X,
 } from "lucide-react";
 import { useSubmitLoanMutation } from "../store/services/baseApi";
+import { MONO_COMPLETE_MESSAGE } from "./monoComplete";
 
 // ============== Color Theme ==============
 const colors = {
@@ -459,6 +461,8 @@ const LoanApplication: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState("");
   const [offerLetterAccepted, setOfferLetterAccepted] = useState(false);
+  const [monoUrl, setMonoUrl] = useState<string>("");
+  const [showMonoWebview, setShowMonoWebview] = useState(false);
 
   // Interest rate (example: 5% per month)
   const interestRate = 0.05;
@@ -473,6 +477,23 @@ const LoanApplication: React.FC = () => {
     } else {
       navigate("/");
     }
+  }, [navigate]);
+
+  // Listen for the Mono webview reaching our redirect page (`/mono/complete`).
+  // When the mandate flow finishes, that page posts a message from inside the
+  // iframe; we close the webview and continue to the confirmation screen.
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only trust messages from our own origin (the redirect page is same-origin).
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== MONO_COMPLETE_MESSAGE) return;
+
+      setShowMonoWebview(false);
+      navigate("/confirmation");
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, [navigate]);
 
   const loanBreakdown = useMemo(() => {
@@ -517,6 +538,15 @@ const LoanApplication: React.FC = () => {
     setError("");
   };
 
+  // Manually closing the webview is a cancellation, NOT a success — the
+  // mandate wasn't completed, so keep the user on this page and tell them.
+  const handleCloseMonoWebview = () => {
+    setShowMonoWebview(false);
+    setError(
+      "Authorization was not completed. Please finish the mandate setup to submit your loan.",
+    );
+  };
+
   const handleSubmit = async () => {
     if (loanAmount < 5000) {
       setError("Minimum loan amount is ₦5,000");
@@ -553,7 +583,13 @@ const LoanApplication: React.FC = () => {
           "loanDetails",
           JSON.stringify(loanDetailsForConfirmation),
         );
-        navigate("/confirmation");
+
+        if (response.data?.monoUrl) {
+          setMonoUrl(response.data.monoUrl);
+          setShowMonoWebview(true);
+        } else {
+          // navigate("/confirmation");
+        }
       }
     } catch (err: any) {
       setError(err?.data?.message || "Something went wrong. Please try again.");
@@ -917,7 +953,7 @@ const LoanApplication: React.FC = () => {
                 </>
               ) : (
                 <>
-                  Submit Application
+                  Proceed to Authorization
                   <ArrowRight size={18} />
                 </>
               )}
@@ -949,6 +985,87 @@ const LoanApplication: React.FC = () => {
           </p>
         </motion.div>
       </div>
+
+      {showMonoWebview && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: colors.background.card,
+              borderRadius: "16px",
+              width: "100%",
+              maxWidth: "480px",
+              height: "min(720px, 90vh)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: shadows.lg,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px",
+                borderBottom: `1px solid ${colors.border.light}`,
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: colors.text.primary,
+                  margin: 0,
+                }}
+              >
+                Complete Authorization
+              </h3>
+              <button
+                onClick={handleCloseMonoWebview}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "6px",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Close"
+              >
+                <X size={20} color={colors.text.muted} />
+              </button>
+            </div>
+            <iframe
+              src={monoUrl}
+              title="Mono Authorization"
+              style={{
+                flex: 1,
+                border: "none",
+                width: "100%",
+              }}
+              allow="camera"
+            />
+          </motion.div>
+        </motion.div>
+      )}
 
       <style>{`
         @keyframes spin {

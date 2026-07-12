@@ -28,6 +28,12 @@ import {
 import Logo from "../assets/logo.jpeg";
 import { colors, shadows } from "../theme";
 
+const getBackendErrorMessage = (err: unknown): string | undefined => {
+  if (err && typeof err === "object" && "data" in err) {
+    return (err as { data?: { message?: string } }).data?.message;
+  }
+  return undefined;
+};
 
 const styles = {
   container: {
@@ -633,9 +639,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
     } catch (err: unknown) {
       setResendOTP(true);
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Error submitting form. Please try again.";
+        getBackendErrorMessage(err) || "Error submitting form. Please try again.";
       setModal({ open: true, message: errorMessage, title: "Error" });
     }
   };
@@ -688,10 +692,12 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
           title: "Error",
         });
       }
-    } catch {
+    } catch (err: unknown) {
+      const errorMessage =
+        getBackendErrorMessage(err) || "Error resending OTP. Please try again.";
       setModal({
         open: true,
-        message: "Error resending OTP. Please try again.",
+        message: errorMessage,
         title: "Error",
       });
     }

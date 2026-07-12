@@ -32,6 +32,7 @@ export interface SavePersonalDetailsResponse {
   message: string;
   data: null | {
     maxLoanEligible?: number;
+    monoCustomerId?: string;
   };
 }
 export interface LoanBreakdownRequest {

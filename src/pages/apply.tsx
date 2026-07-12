@@ -1214,7 +1214,7 @@ const [lastName, setLastName] = useState<string>("");
       2: "/statement-review",
       3: "/personal-details",
       4: "/loan-application",
-      5: "/confirmation",
+      5: "/personal-details",
       6: "/confirmation",
     };
     window.location.href = stepRoutes[stepNumber] || "/";
@@ -1272,6 +1272,7 @@ const [lastName, setLastName] = useState<string>("");
         lastName,
         phoneNumber,
         productId: "00487268-6698-4fe4-bda2-39fc32c60a1d",
+        // productId: "372e9a1d-c714-4fc2-b44a-3eeb8ebda4c1"
       }).unwrap();
 
       if (response.success) {
@@ -2021,6 +2022,22 @@ const [lastName, setLastName] = useState<string>("");
             // Navigate to currentStep (the step user needs to complete)
             const stepToNavigate = resumeStatus.currentStep;
             console.log("Navigating to step:", stepToNavigate);
+
+            // Step 1 is this same page, so stay put, pre-fill the
+            // fields with the resumed application's data, and drop the
+            // user straight into the OTP screen so they can resend and
+            // verify instead of resubmitting the whole form.
+            if (stepToNavigate === 1) {
+              setEmail(resumeStatus.email || "");
+              setFirstName(resumeStatus.firstName || "");
+              setLastName(resumeStatus.lastName || "");
+              setLoanId(resumeStatus.loanId || "");
+              localStorage.setItem("loanId", resumeStatus.loanId || "");
+              setIsOTP(true);
+              setResendOTP(true);
+              setShowResumeModal(false);
+              return;
+            }
 
             // If navigating to step 4 (loan application), ensure maxLoanEligible is set
             if (

@@ -74,5 +74,6 @@ export interface SubmitLoanResponse {
     monthlyRepaymentAmount: number;
     repaymentAmount: number;
     tenor: number;
+    monoUrl: string;
   };
 }
