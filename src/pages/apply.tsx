@@ -30,6 +30,21 @@ import {
 import Logo from "../assets/logo.jpeg";
 import { colors, shadows } from "../theme";
 
+// The loan product this build onboards against. Staging and production have
+// different product records, so this is set per environment alongside
+// REACT_APP_API_BASE_URL — see .env.development / .env.production.
+//
+// Deliberately no fallback: a build with no product id must fail loudly rather
+// than quietly onboarding staging applicants onto the production product.
+const PRODUCT_ID = process.env.REACT_APP_PRODUCT_ID;
+
+if (!PRODUCT_ID) {
+  throw new Error(
+    "REACT_APP_PRODUCT_ID is not set. Set it in the deployment environment, " +
+      "or restore .env.development / .env.production."
+  );
+}
+
 // Styled Components using inline styles for Shopify-inspired design
 const styles = {
   container: {
@@ -1290,8 +1305,7 @@ const [lastName, setLastName] = useState<string>("");
         firstName,
         lastName,
         phoneNumber,
-        productId: "00487268-6698-4fe4-bda2-39fc32c60a1d",
-        // productId: "372e9a1d-c714-4fc2-b44a-3eeb8ebda4c1"
+        productId: PRODUCT_ID,
       }).unwrap();
 
       if (response.success) {
