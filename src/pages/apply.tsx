@@ -1322,7 +1322,7 @@ const [lastName, setLastName] = useState<string>("");
         setIsOTP(true);
       }
     } catch (error: unknown) {
-      console.error("Error during onboarding:", error);
+      
       setLoadingState(false);
       const errData = (error as { data?: { message?: string } })?.data;
       const errMsg = errData?.message ?? "";
