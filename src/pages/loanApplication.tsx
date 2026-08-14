@@ -575,45 +575,37 @@ const LoanApplication: React.FC = () => {
         return;
       }
 
-      console.log("loan request", {
+      const response = await submitLoan({
         loanId,
         loanAmount,
         tenor: duration,
         acceptOfferLetter: offerLetterAccepted,
         monoCustomerId: localStorage.getItem("monoCustomerId") || "",
-      });
+      }).unwrap();
 
-      // const response = await submitLoan({
-      //   loanId,
-      //   loanAmount,
-      //   tenor: duration,
-      //   acceptOfferLetter: offerLetterAccepted,
-      //   monoCustomerId: localStorage.getItem("monoCustomerId") || "",
-      // }).unwrap();
+      if (response.success) {
+        // Store loan data for confirmation page
+        const loanDetailsForConfirmation = {
+          loanAmount,
+          duration,
+          interestRate,
+          processingFee: loanBreakdown.processingFee,
+          totalInterest: loanBreakdown.totalInterest,
+          totalRepayment: loanBreakdown.totalRepayment,
+          monthlyPayment: loanBreakdown.monthlyPayment,
+        };
+        localStorage.setItem(
+          "loanDetails",
+          JSON.stringify(loanDetailsForConfirmation),
+        );
 
-      // if (response.success) {
-      //   // Store loan data for confirmation page
-      //   const loanDetailsForConfirmation = {
-      //     loanAmount,
-      //     duration,
-      //     interestRate,
-      //     processingFee: loanBreakdown.processingFee,
-      //     totalInterest: loanBreakdown.totalInterest,
-      //     totalRepayment: loanBreakdown.totalRepayment,
-      //     monthlyPayment: loanBreakdown.monthlyPayment,
-      //   };
-      //   localStorage.setItem(
-      //     "loanDetails",
-      //     JSON.stringify(loanDetailsForConfirmation),
-      //   );
-
-      //   if (response.data?.monoUrl) {
-      //     setMonoUrl(response.data.monoUrl);
-      //     setShowMonoWebview(true);
-      //   } else {
-      //     // navigate("/confirmation");
-      //   }
-      // }
+        if (response.data?.monoUrl) {
+          setMonoUrl(response.data.monoUrl);
+          setShowMonoWebview(true);
+        } else {
+          navigate("/confirmation");
+        }
+      }
     } catch (err: any) {
       setError(err?.data?.message || "Something went wrong. Please try again.");
     }
