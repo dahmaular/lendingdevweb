@@ -85,13 +85,26 @@ export interface CurrentStatusResponse {
   data: CurrentStatusData | null;
 }
 
+// Which backend this build talks to is decided at build time by
+// REACT_APP_API_BASE_URL. Defaults live in .env.development (staging) and
+// .env.production (production); a host such as Vercel overrides both by
+// setting the variable per environment.
+//
+// Deliberately no fallback: a build with no API URL must fail loudly rather
+// than quietly pointing a staging site at the production backend.
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "REACT_APP_API_BASE_URL is not set. Set it in the deployment environment, " +
+      "or restore .env.development / .env.production."
+  );
+}
+
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl:
-    // "http://localhost:5275/api/v1",
-      // "https://staginlending-fvexbmfhawe7e6ad.southafricanorth-01.azurewebsites.net/api/v1",
-      "https://devpayprod-cvd7axbkemare5dn.southafricanorth-01.azurewebsites.net/api/v1",
+    baseUrl: API_BASE_URL,
     prepareHeaders: (headers) => {
       // Add any required headers here
       headers.set("Content-Type", "application/json");

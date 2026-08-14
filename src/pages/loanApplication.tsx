@@ -496,6 +496,13 @@ const LoanApplication: React.FC = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, [navigate]);
 
+  // Any existing mandate URL was generated for a specific amount/tenor. If the
+  // user changes either, invalidate it so the next submit re-runs step4 with the
+  // new figures instead of reopening a stale mandate.
+  useEffect(() => {
+    setMonoUrl("");
+  }, [loanAmount, duration]);
+
   const loanBreakdown = useMemo(() => {
     const principal = loanAmount;
     const totalInterest = principal * interestRate * duration;
@@ -553,6 +560,14 @@ const LoanApplication: React.FC = () => {
       return;
     }
 
+    // If we already generated a mandate URL (e.g. the user closed the webview
+    // and is resuming), just reopen it instead of re-running step4.
+    if (monoUrl) {
+      setError("");
+      setShowMonoWebview(true);
+      return;
+    }
+
     try {
       const loanId = localStorage.getItem("loanId");
       if (!loanId) {
@@ -560,37 +575,45 @@ const LoanApplication: React.FC = () => {
         return;
       }
 
-      const response = await submitLoan({
+      console.log("loan request", {
         loanId,
         loanAmount,
         tenor: duration,
         acceptOfferLetter: offerLetterAccepted,
         monoCustomerId: localStorage.getItem("monoCustomerId") || "",
-      }).unwrap();
+      });
 
-      if (response.success) {
-        // Store loan data for confirmation page
-        const loanDetailsForConfirmation = {
-          loanAmount,
-          duration,
-          interestRate,
-          processingFee: loanBreakdown.processingFee,
-          totalInterest: loanBreakdown.totalInterest,
-          totalRepayment: loanBreakdown.totalRepayment,
-          monthlyPayment: loanBreakdown.monthlyPayment,
-        };
-        localStorage.setItem(
-          "loanDetails",
-          JSON.stringify(loanDetailsForConfirmation),
-        );
+      // const response = await submitLoan({
+      //   loanId,
+      //   loanAmount,
+      //   tenor: duration,
+      //   acceptOfferLetter: offerLetterAccepted,
+      //   monoCustomerId: localStorage.getItem("monoCustomerId") || "",
+      // }).unwrap();
 
-        if (response.data?.monoUrl) {
-          setMonoUrl(response.data.monoUrl);
-          setShowMonoWebview(true);
-        } else {
-          // navigate("/confirmation");
-        }
-      }
+      // if (response.success) {
+      //   // Store loan data for confirmation page
+      //   const loanDetailsForConfirmation = {
+      //     loanAmount,
+      //     duration,
+      //     interestRate,
+      //     processingFee: loanBreakdown.processingFee,
+      //     totalInterest: loanBreakdown.totalInterest,
+      //     totalRepayment: loanBreakdown.totalRepayment,
+      //     monthlyPayment: loanBreakdown.monthlyPayment,
+      //   };
+      //   localStorage.setItem(
+      //     "loanDetails",
+      //     JSON.stringify(loanDetailsForConfirmation),
+      //   );
+
+      //   if (response.data?.monoUrl) {
+      //     setMonoUrl(response.data.monoUrl);
+      //     setShowMonoWebview(true);
+      //   } else {
+      //     // navigate("/confirmation");
+      //   }
+      // }
     } catch (err: any) {
       setError(err?.data?.message || "Something went wrong. Please try again.");
     }

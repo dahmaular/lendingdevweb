@@ -1061,6 +1061,14 @@ const ModernInput: React.FC<{
   );
 };
 
+// Formats a Date as the YYYY-MM-DD string a native date input expects,
+// using local calendar parts so the day never shifts across timezones.
+const toDateInputValue = (date: Date): string => {
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
 // Main Component
 interface LoginPageProps {
   onLogin: (email: string, bvn: string, dob: string) => void;
@@ -1074,7 +1082,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
 
   const [email, setEmail] = useState<string>("");
-  const [dob, setDob] = useState<Date>(eighteenYearsAgo);
+  const [dob, setDob] = useState<string>(toDateInputValue(eighteenYearsAgo));
   const [firstName, setFirstName] = useState<string>("");
 const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -1246,12 +1254,23 @@ const [lastName, setLastName] = useState<string>("");
       return;
     }
 
+    const [dobYear, dobMonth, dobDay] = dob.split("-").map(Number);
+    const dobDate = new Date(dobYear, dobMonth - 1, dobDay);
+    if (!dob || Number.isNaN(dobDate.getTime())) {
+      setModal({
+        open: true,
+        message: "Please enter a valid date of birth.",
+        title: "Invalid Date of Birth",
+      });
+      return;
+    }
+
     setLoadingState(true);
 
     const today = new Date();
-    const age = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    const dayDiff = today.getDate() - dob.getDate();
+    const age = today.getFullYear() - dobDate.getFullYear();
+    const monthDiff = today.getMonth() - dobDate.getMonth();
+    const dayDiff = today.getDate() - dobDate.getDate();
     const actualAge =
       monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
 
@@ -1705,8 +1724,9 @@ const [lastName, setLastName] = useState<string>("");
                       </div>
                       <input
                         type="date"
-                        value={dob.toISOString().split("T")[0]}
-                        onChange={(e) => setDob(new Date(e.target.value))}
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        max={toDateInputValue(new Date())}
                         required
                         style={{
                           ...styles.input,
