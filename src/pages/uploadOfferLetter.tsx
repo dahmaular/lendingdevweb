@@ -1,122 +1,33 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload,
   FileText,
   Check,
   Loader2,
-  FileCheck,
-  AlertCircle,
-  Trash2,
-  Sparkles,
-  Shield,
+  Lock,
+  ArrowRight,
+  LucideIcon,
 } from "lucide-react";
 import {
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
 } from "../store/services/baseApi";
-import { colors, shadows } from "../theme";
-import Logo from "../assets/devpay-logo.png";
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    background: `linear-gradient(135deg, ${colors.primary[50]} 0%, ${colors.neutral[50]} 50%, ${colors.secondary[50]} 100%)`,
-    padding: "24px",
-  } as React.CSSProperties,
-
-  mainContent: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    maxWidth: "800px",
-    margin: "0 auto",
-    width: "100%",
-  } as React.CSSProperties,
-
-  card: {
-    background: "rgba(255, 255, 255, 0.95)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    padding: "48px",
-    boxShadow: shadows.xl,
-    border: `1px solid ${colors.neutral[200]}`,
-    width: "100%",
-  } as React.CSSProperties,
-
-  header: {
-    textAlign: "center" as const,
-    marginBottom: "40px",
-  } as React.CSSProperties,
-
-  uploadZone: {
-    border: `3px dashed ${colors.neutral[300]}`,
-    borderRadius: "20px",
-    padding: "60px 40px",
-    textAlign: "center" as const,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    background: colors.neutral[50],
-    position: "relative" as const,
-    overflow: "hidden" as const,
-  } as React.CSSProperties,
-
-  uploadZoneActive: {
-    borderColor: colors.primary[500],
-    background: `linear-gradient(135deg, ${colors.primary[50]} 0%, ${colors.secondary[50]} 100%)`,
-    transform: "scale(1.02)",
-    boxShadow: `0 0 0 4px ${colors.primary[100]}`,
-  } as React.CSSProperties,
-
-  uploadZoneDragOver: {
-    borderColor: colors.secondary[500],
-    background: `linear-gradient(135deg, ${colors.secondary[50]} 0%, ${colors.primary[50]} 100%)`,
-    borderStyle: "solid" as const,
-  } as React.CSSProperties,
-
-  filePreview: {
-    background: "#fff",
-    borderRadius: "16px",
-    padding: "24px",
-    border: `2px solid ${colors.primary[200]}`,
-    marginTop: "24px",
-  } as React.CSSProperties,
-
-  button: {
-    width: "100%",
-    padding: "16px 24px",
-    fontSize: "16px",
-    fontWeight: 600,
-    border: "none",
-    borderRadius: "12px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    transition: "all 0.2s ease",
-    background: `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.primary[600]} 100%)`,
-    color: "#fff",
-    boxShadow: shadows.md,
-  } as React.CSSProperties,
-
-  buttonDisabled: {
-    opacity: 0.6,
-    cursor: "not-allowed",
-  } as React.CSSProperties,
-};
+import { colors, radii, shadows, type } from "../theme";
+import {
+  Dropzone,
+  PageShell,
+  PrimaryButton,
+  Receipt,
+  Sheet,
+  SheetTitle,
+} from "../components/chrome";
 
 const UploadOfferLetter: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadDocument, { isLoading: isUploadingDocument }] =
     useUploadIDMutation();
@@ -147,33 +58,6 @@ const UploadOfferLetter: React.FC = () => {
 
     setUploadFile(file);
     setError("");
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
   };
 
   const handleUpload = async () => {
@@ -266,447 +150,138 @@ const UploadOfferLetter: React.FC = () => {
   };
   */
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
-  };
-
   return (
-    <div style={styles.container}>
-      <div style={styles.mainContent}>
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: "32px" }}
-        >
-          <img
-            src={Logo}
-            alt="devpay"
-            style={{ width: "132px", height: "auto", display: "block" }}
+    <>
+      <PageShell
+        step={4}
+        showHelp
+        aside={
+          <Receipt
+            title="This step"
+            rows={[
+              { label: "Document", value: uploadFile ? uploadFile.name : undefined },
+              {
+                label: "Size",
+                value: uploadFile
+                  ? `${(uploadFile.size / 1024).toFixed(0)}KB`
+                  : undefined,
+              },
+              { label: "Status", value: uploadFile ? "Ready to submit" : undefined },
+            ]}
+            footer="Your signed letter is stored encrypted and attached to this application only."
           />
-        </motion.div>
+        }
+      >
+        <Sheet>
+          <SheetTitle
+            title="Upload your signed offer letter"
+            subtitle="Please upload your signed loan offer letter to proceed with your application."
+          />
 
-        {/* Main Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={styles.card}
-        >
-          {/* Header */}
-          <div style={styles.header}>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.6 }}
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "20px",
-                background: `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 24px",
-                boxShadow: `0 8px 24px ${colors.primary[200]}`,
-              }}
-            >
-              <FileCheck size={40} color="#fff" />
-            </motion.div>
-            <h1
-              style={{
-                fontSize: "32px",
-                fontWeight: 700,
-                color: colors.neutral[900],
-                marginBottom: "12px",
-              }}
-            >
-              Upload Signed Offer Letter
-            </h1>
-            <p
-              style={{
-                fontSize: "16px",
-                color: colors.neutral[600],
-                lineHeight: 1.6,
-              }}
-            >
-              Please upload your signed loan offer letter to proceed with your
-              application
-            </p>
-          </div>
-
-          {/* Info Boxes */}
-          <div style={{ display: "flex", gap: "16px", marginBottom: "32px" }}>
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                background: colors.primary[50],
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                border: `1px solid ${colors.primary[200]}`,
-              }}
-            >
-              <Shield
-                size={20}
-                color={colors.primary[600]}
-                style={{ flexShrink: 0 }}
-              />
-              <div>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: colors.neutral[600],
-                    margin: 0,
-                  }}
-                >
-                  Secure Upload
-                </p>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: colors.neutral[800],
-                    margin: "2px 0 0",
-                  }}
-                >
-                  Bank-level encryption
-                </p>
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                padding: "16px",
-                background: colors.secondary[50],
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                border: `1px solid ${colors.secondary[200]}`,
-              }}
-            >
-              <FileText
-                size={20}
-                color={colors.secondary[600]}
-                style={{ flexShrink: 0 }}
-              />
-              <div>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: colors.neutral[600],
-                    margin: 0,
-                  }}
-                >
-                  Accepted Formats
-                </p>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: colors.neutral[800],
-                    margin: "2px 0 0",
-                  }}
-                >
-                  PDF, JPG, PNG
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Upload Zone */}
-          {!uploadFile && (
-            <motion.div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              style={{
-                ...styles.uploadZone,
-                ...(isDragging ? styles.uploadZoneDragOver : {}),
-              }}
-            >
-              {/* Decorative background */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            {(
+              [
+                { Icon: Lock, label: "Secure upload", value: "Bank-level encryption" },
+                { Icon: FileText, label: "Accepted formats", value: "PDF, JPG, PNG" },
+              ] as { Icon: LucideIcon; label: string; value: string }[]
+            ).map(({ Icon, label, value }) => (
               <div
+                key={label}
                 style={{
-                  position: "absolute",
-                  top: "-50px",
-                  right: "-50px",
-                  width: "150px",
-                  height: "150px",
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle, ${colors.primary[100]} 0%, transparent 70%)`,
-                  opacity: 0.5,
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "-30px",
-                  left: "-30px",
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle, ${colors.secondary[100]} 0%, transparent 70%)`,
-                  opacity: 0.5,
-                }}
-              />
-
-              <motion.div
-                animate={{
-                  y: isDragging ? -5 : [0, -10, 0],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: isDragging ? 0 : Infinity,
-                  ease: "easeInOut",
-                }}
-                style={{ position: "relative", zIndex: 1 }}
-              >
-                <div
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "16px",
-                    background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 20px",
-                  }}
-                >
-                  <Upload size={36} color={colors.primary[600]} />
-                </div>
-                <h3
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    color: colors.neutral[800],
-                    marginBottom: "8px",
-                  }}
-                >
-                  {isDragging ? "Drop file here" : "Drag & drop your file here"}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "15px",
-                    color: colors.neutral[500],
-                    marginBottom: "20px",
-                  }}
-                >
-                  or click to browse from your device
-                </p>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "12px 24px",
-                    background: "#fff",
-                    borderRadius: "10px",
-                    border: `2px solid ${colors.primary[300]}`,
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: colors.primary[600],
-                  }}
-                >
-                  <Sparkles size={16} />
-                  Choose File
-                </div>
-              </motion.div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileInputChange}
-                style={{ display: "none" }}
-              />
-            </motion.div>
-          )}
-
-          {/* File Preview */}
-          {uploadFile && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={styles.filePreview}
-            >
-              <div
-                style={{
+                  flexGrow: 1,
+                  minWidth: "200px",
                   display: "flex",
                   alignItems: "center",
-                  gap: "16px",
+                  gap: "13px",
+                  padding: "14px 18px",
+                  background: "#FBF7EC",
+                  border: `1px solid ${colors.border.light}`,
+                  borderRadius: `${radii.lg - 2}px`,
                 }}
               >
-                <div
-                  style={{
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "12px",
-                    background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <FileText size={28} color={colors.primary[600]} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h4
+                <Icon size={19} strokeWidth={1.7} color={colors.secondary.main} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span
                     style={{
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: colors.neutral[800],
-                      marginBottom: "4px",
+                      font: `500 12px/1 ${type.body}`,
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      color: colors.text.muted,
                     }}
                   >
-                    {uploadFile.name}
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: colors.neutral[500],
-                      margin: 0,
-                    }}
-                  >
-                    {formatFileSize(uploadFile.size)}
-                  </p>
+                    {label}
+                  </span>
+                  <span style={{ font: `600 14px/1 ${type.body}`, color: colors.text.primary }}>
+                    {value}
+                  </span>
                 </div>
-                <button
-                  onClick={() => {
-                    setUploadFile(null);
-                    setError("");
-                  }}
-                  style={{
-                    background: colors.neutral[100],
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "12px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <Trash2 size={20} color={colors.neutral[600]} />
-                </button>
               </div>
-            </motion.div>
-          )}
+            ))}
+          </div>
 
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                marginTop: "16px",
-                padding: "16px",
-                background: colors.error + "15",
-                borderRadius: "12px",
-                border: `1px solid ${colors.error}30`,
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              <AlertCircle size={20} color={colors.error} />
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: colors.error,
-                  margin: 0,
-                }}
-              >
-                {error}
-              </p>
-            </motion.div>
-          )}
+          <Dropzone
+            file={uploadFile}
+            onFile={handleFileSelect}
+            onClear={() => setUploadFile(null)}
+            error={error || undefined}
+            title="Drag & drop your file here"
+            caption="or click to browse from your device"
+          />
 
-          {/* Upload Button */}
-          {uploadFile && (
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={handleUpload}
-              disabled={isLoading}
-              whileHover={!isLoading ? { scale: 1.02 } : {}}
-              whileTap={!isLoading ? { scale: 0.98 } : {}}
-              style={{
-                ...styles.button,
-                marginTop: "24px",
-                ...(isLoading ? styles.buttonDisabled : {}),
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2
-                    size={20}
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload size={20} />
-                  Upload Document
-                </>
-              )}
-            </motion.button>
-          )}
-
-          {/* Tips */}
-          <div
-            style={{
-              marginTop: "32px",
-              padding: "20px",
-              background: colors.neutral[50],
-              borderRadius: "12px",
-              borderLeft: `4px solid ${colors.primary[500]}`,
-            }}
-          >
-            <p
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: colors.neutral[700],
-                marginBottom: "8px",
-              }}
-            >
-              📋 Important Tips:
-            </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <span style={{ font: `600 14px/1 ${type.body}`, color: colors.text.primary }}>
+              Before you upload
+            </span>
             <ul
               style={{
-                fontSize: "13px",
-                color: colors.neutral[600],
-                lineHeight: 1.8,
                 margin: 0,
-                paddingLeft: "20px",
+                padding: 0,
+                listStyle: "none",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: "10px 32px",
               }}
             >
-              <li>Ensure all pages of the offer letter are included</li>
-              <li>Make sure your signature is clear and visible</li>
-              <li>File size should not exceed 10MB</li>
-              <li>Accepted formats: PDF, JPG, PNG</li>
+              {[
+                "Ensure all pages of the offer letter are included",
+                "Make sure your signature is clear and visible",
+                "File size should not exceed 10MB",
+                "Accepted formats: PDF, JPG, PNG",
+              ].map((tip) => (
+                <li
+                  key={tip}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "11px",
+                    font: `400 13px/1.5 ${type.body}`,
+                    color: colors.text.secondary,
+                  }}
+                >
+                  <Check
+                    size={15}
+                    strokeWidth={2.4}
+                    color={colors.secondary.main}
+                    style={{ flexShrink: 0, marginTop: "3px" }}
+                  />
+                  <span>{tip}</span>
+                </li>
+              ))}
             </ul>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Success Modal */}
+          <div style={{ marginTop: "auto" }}>
+            <PrimaryButton
+              onClick={handleUpload}
+              loading={isLoading}
+              disabled={!uploadFile}
+              icon={ArrowRight}
+            >
+              {isLoading ? "Uploading" : "Submit offer letter"}
+            </PrimaryButton>
+          </div>
+        </Sheet>
+      </PageShell>
       <AnimatePresence>
         {showSuccess && (
           <motion.div
@@ -807,7 +382,7 @@ const UploadOfferLetter: React.FC = () => {
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </div>
+    </>
   );
 };
 
