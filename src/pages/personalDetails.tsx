@@ -1181,6 +1181,10 @@ const PersonalDetails: React.FC = () => {
   });
   const [frontDocument, setFrontDocument] = useState<File | null>(null);
   const [backDocument, setBackDocument] = useState<File | null>(null);
+
+  // A passport carries everything on the photo page, so there is no back to
+  // upload — the field is hidden and left out of validation entirely.
+  const isPassport = formData.identificationType === "International Passport";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -1197,6 +1201,10 @@ const PersonalDetails: React.FC = () => {
       }
       return newData;
     });
+    if (field === "identificationType" && value === "International Passport") {
+      setBackDocument(null);
+      setErrors((prev) => ({ ...prev, backDocument: "" }));
+    }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -1252,7 +1260,6 @@ const PersonalDetails: React.FC = () => {
     const requiresExpiry =
       formData.identificationType === "International Passport" ||
       formData.identificationType === "Driver's License";
-    const isPassport = formData.identificationType === "International Passport";
     const fields = ["addressLine", "identificationType", "idNumber"];
     if (requiresExpiry) {
       fields.push("expiryDate");
@@ -1564,16 +1571,18 @@ const PersonalDetails: React.FC = () => {
             caption="PNG, JPG or PDF · up to 5MB · all four corners visible"
           />
 
-          <Dropzone
-            variant="inline"
-            label="ID document (back)"
-            file={backDocument}
-            onFile={handleBackFile}
-            onClear={() => setBackDocument(null)}
-            error={errors.backDocument}
-            title="Drop the back of your ID here, or browse"
-            caption="Optional for passports · PNG, JPG or PDF"
-          />
+          {!isPassport && (
+            <Dropzone
+              variant="inline"
+              label="ID document (back) *"
+              file={backDocument}
+              onFile={handleBackFile}
+              onClear={() => setBackDocument(null)}
+              error={errors.backDocument}
+              title="Drop the back of your ID here, or browse"
+              caption="PNG, JPG or PDF · up to 5MB"
+            />
+          )}
 
           <Callout icon={Shield} title="Your data is secure">
             We use bank-level encryption to protect your personal information.
