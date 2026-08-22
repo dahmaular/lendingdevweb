@@ -200,3 +200,29 @@ details[open] > summary > span[aria-hidden='true'] {
   border-color: #0b2621;
   color: #e6be58;
 }
+
+/* The hero indicator fills over the autoplay interval, so the rule shows how
+   long is left rather than just which slide you are on. Duration and
+   play-state are set inline; pausing the carousel pauses this with it. */
+@keyframes dv-slide-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.dv-progress {
+  transform-origin: left center;
+  animation-name: dv-slide-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

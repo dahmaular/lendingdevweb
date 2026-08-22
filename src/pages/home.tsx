@@ -111,6 +111,34 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
 ];
 
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+/**
+ * Motion is deliberately concentrated in two places: the hero's entrance and
+ * its slide changes. Everything else gets one quiet reveal as it scrolls into
+ * view. A page where every element moves reads as noise, not craft.
+ *
+ * `reduceMotion` collapses all of it to plain visible content — never to
+ * hidden content, which is how reduced-motion implementations usually break.
+ */
+const wordIn = {
+  hidden: { opacity: 0, y: "0.4em" },
+  shown: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.1 + i * 0.045, duration: 0.55, ease: EASE_OUT },
+  }),
+};
+
+const bodyIn = {
+  hidden: { opacity: 0, y: 12 },
+  shown: (delay: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay, duration: 0.5, ease: EASE_OUT },
+  }),
+};
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const narrow = useIsNarrow();
@@ -132,6 +160,16 @@ const Home: React.FC = () => {
     );
     return () => window.clearTimeout(id);
   }, [slide, paused, reduceMotion]);
+
+  /** One quiet rise as a section reaches the viewport. Runs once. */
+  const reveal = reduceMotion
+    ? { initial: { opacity: 1, y: 0 } }
+    : {
+        initial: { opacity: 0, y: 26 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: "-90px" },
+        transition: { duration: 0.6, ease: EASE_OUT },
+      };
 
   const section: React.CSSProperties = {
     display: "flex",
@@ -242,33 +280,55 @@ const Home: React.FC = () => {
                     transition: reduceMotion ? "none" : "opacity 620ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 >
-                  {i === 0 ? (
-                    <h1
-                      style={{
+                  {React.createElement(
+                    i === 0 ? "h1" : "p",
+                    {
+                      "aria-hidden": i === 0 ? undefined : "true",
+                      style: {
                         margin: 0,
                         font: `700 clamp(40px, 7vw, 76px)/1.04 ${type.display}`,
                         letterSpacing: "-0.035em",
                         color: colors.text.primary,
-                        textWrap: "balance",
-                      }}
-                    >
-                      {s.headline}
-                    </h1>
-                  ) : (
-                    <p
-                      aria-hidden="true"
-                      style={{
-                        margin: 0,
-                        font: `700 clamp(40px, 7vw, 76px)/1.04 ${type.display}`,
-                        letterSpacing: "-0.035em",
-                        color: colors.text.primary,
-                        textWrap: "balance",
-                      }}
-                    >
-                      {s.headline}
-                    </p>
+                        textWrap: "balance" as const,
+                      },
+                    },
+                    // Word by word, so the incoming slide's headline assembles
+                    // as it arrives rather than sliding in as a finished block.
+                    s.headline.split(" ").map((word, w) => (
+                      <span
+                        key={`${word}-${w}`}
+                        style={{ display: "inline-block", overflow: "hidden", verticalAlign: "top" }}
+                      >
+                        <motion.span
+                          style={{ display: "inline-block", willChange: "transform" }}
+                          custom={w}
+                          variants={wordIn}
+                          initial={reduceMotion ? { opacity: 1, y: 0 } : "hidden"}
+                          animate={
+                            reduceMotion
+                              ? { opacity: 1, y: 0 }
+                              : i === slide
+                              ? "shown"
+                              : "hidden"
+                          }
+                        >
+                          {word}
+                          {w < s.headline.split(" ").length - 1 ? "\u00A0" : ""}
+                        </motion.span>
+                      </span>
+                    ))
                   )}
-                  <p
+                  <motion.p
+                    custom={0.1 + s.headline.split(" ").length * 0.045}
+                    variants={bodyIn}
+                    initial={reduceMotion ? { opacity: 1, y: 0 } : "hidden"}
+                    animate={
+                      reduceMotion
+                        ? { opacity: 1, y: 0 }
+                        : i === slide
+                        ? "shown"
+                        : "hidden"
+                    }
                     style={{
                       margin: 0,
                       maxWidth: "46ch",
@@ -278,7 +338,7 @@ const Home: React.FC = () => {
                     }}
                   >
                     {s.body}
-                  </p>
+                  </motion.p>
                 </div>
               ))}
             </div>
@@ -310,10 +370,28 @@ const Home: React.FC = () => {
                     display: "block",
                     height: "4px",
                     borderRadius: "2px",
-                    background: i === slide ? brand.gold : colors.border.light,
-                    transition: reduceMotion ? "none" : "background 240ms ease",
+                    overflow: "hidden",
+                    background: i < slide ? brand.gold : colors.border.light,
+                    transition: reduceMotion ? "none" : "background 400ms ease",
                   }}
-                />
+                >
+                  {/* Only the current rule fills, and it fills over exactly the
+                      time left before the slide changes. */}
+                  {i === slide && (
+                    <span
+                      key={slide}
+                      className="dv-progress"
+                      style={{
+                        display: "block",
+                        height: "100%",
+                        borderRadius: "2px",
+                        background: brand.gold,
+                        animationDuration: `${SLIDE_INTERVAL_MS}ms`,
+                        animationPlayState: paused ? "paused" : "running",
+                      }}
+                    />
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -333,7 +411,8 @@ const Home: React.FC = () => {
         </section>
 
         {/* -------------------------------------------------------- features */}
-        <section
+        <motion.section
+          {...reveal}
           style={{
             display: "grid",
             gridTemplateColumns: narrow ? "1fr" : "repeat(3, minmax(0, 1fr))",
@@ -343,9 +422,15 @@ const Home: React.FC = () => {
           {FEATURES.map(({ icon: Icon, title, description }, i) => (
             <motion.article
               key={title}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 + i * 0.08 }}
+              initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: i * 0.09, ease: EASE_OUT }}
+              whileHover={
+                reduceMotion
+                  ? undefined
+                  : { y: -5, boxShadow: narrow ? "3px 3px 0 #0B2621" : "10px 10px 0 #0B2621" }
+              }
               style={{ ...sheet, padding: "28px 26px", display: "flex", flexDirection: "column", gap: "16px" }}
             >
               <div
@@ -378,10 +463,10 @@ const Home: React.FC = () => {
               </div>
             </motion.article>
           ))}
-        </section>
+        </motion.section>
 
         {/* ---------------------------------------------------- how it works */}
-        <section style={section}>
+        <motion.section {...reveal} style={section}>
           {eyebrow("How it works")}
           {heading("Five steps, start to finish")}
 
@@ -397,7 +482,14 @@ const Home: React.FC = () => {
             }}
           >
             {STEPS.map((step, i) => (
-              <li key={step.name} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <motion.li
+                key={step.name}
+                initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.45, delay: i * 0.07, ease: EASE_OUT }}
+                style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+              >
                 <div
                   style={{
                     display: "flex",
@@ -435,13 +527,13 @@ const Home: React.FC = () => {
                 <p style={{ margin: 0, font: `400 14px/1.5 ${type.body}`, color: colors.text.secondary }}>
                   {step.sub}
                 </p>
-              </li>
+              </motion.li>
             ))}
           </ol>
-        </section>
+        </motion.section>
 
         {/* ------------------------------------------------ what you'll need */}
-        <section style={section}>
+        <motion.section {...reveal} style={section}>
           {eyebrow("What you'll need")}
           {heading("Have these to hand")}
 
@@ -480,10 +572,10 @@ const Home: React.FC = () => {
               </div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
         {/* -------------------------------------------------------------- faq */}
-        <section style={section}>
+        <motion.section {...reveal} style={section}>
           {eyebrow("Questions")}
           {heading("Before you apply")}
 
@@ -537,10 +629,11 @@ const Home: React.FC = () => {
               </details>
             ))}
           </div>
-        </section>
+        </motion.section>
 
         {/* ---------------------------------------------------- closing call */}
-        <section
+        <motion.section
+          {...reveal}
           style={{
             ...sheet,
             background: colors.primary.main,
@@ -578,9 +671,12 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <button
+          <motion.button
             type="button"
             onClick={apply}
+            whileHover={reduceMotion ? undefined : { y: -2 }}
+            whileTap={reduceMotion ? undefined : { y: 0, scale: 0.985 }}
+            transition={{ duration: 0.18, ease: EASE_OUT }}
             style={{
               height: "60px",
               padding: "0 30px",
@@ -599,8 +695,8 @@ const Home: React.FC = () => {
           >
             Start your application
             <ArrowRight size={19} strokeWidth={2} />
-          </button>
-        </section>
+          </motion.button>
+        </motion.section>
       </main>
 
       {/* ----------------------------------------------------------- footer */}
