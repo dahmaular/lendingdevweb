@@ -1,14 +1,8 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
-
-const colors = {
-  primary: { main: "#1E88E5", dark: "#1565C0" },
-  background: { main: "#F8FAFC" },
-  text: { primary: "#1E293B", secondary: "#64748B" },
-  status: { success: "#00C853" },
-};
+import { Check, Lock } from "lucide-react";
+import { brand, colors, radii, shadows, type } from "../theme";
 
 // The message type the parent (loanApplication.tsx) listens for.
 export const MONO_COMPLETE_MESSAGE = "mono-mandate-complete";
@@ -53,27 +47,93 @@ const MonoComplete: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(135deg, ${colors.background.main} 0%, #E3F2FD 100%)`,
+        background: colors.background.main,
         padding: "24px",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: type.body,
       }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         style={{
+          width: "100%",
+          maxWidth: "520px",
+          background: colors.background.card,
+          border: `1px solid ${colors.border.light}`,
+          borderRadius: `${radii.lg + 2}px`,
+          boxShadow: shadows.xl,
+          padding: "44px 40px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "20px",
           textAlign: "center",
-          color: colors.text.primary,
         }}
       >
-        <CheckCircle2 size={56} color={colors.status.success} />
-        <h2 style={{ margin: "16px 0 8px", fontSize: 20, fontWeight: 600 }}>
-          Authorization complete
-        </h2>
-        <p style={{ margin: 0, color: colors.text.secondary, fontSize: 14 }}>
-          Finalizing your application…
-        </p>
+        <div
+          style={{
+            width: "76px",
+            height: "76px",
+            borderRadius: `${radii.lg + 6}px`,
+            background: brand.gold,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Check size={36} strokeWidth={2.6} color={colors.primary.main} />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <h1
+            style={{
+              margin: 0,
+              font: `700 clamp(24px, 4vw, 32px)/1.15 ${type.display}`,
+              letterSpacing: "-0.025em",
+              color: colors.text.primary,
+            }}
+          >
+            Authorization complete
+          </h1>
+          <p
+            style={{
+              margin: 0,
+              font: `400 16px/1.55 ${type.body}`,
+              color: colors.text.secondary,
+            }}
+          >
+            Finalising your application. We&rsquo;ll take you back to your file in a moment —
+            there&rsquo;s nothing you need to do here.
+          </p>
+        </div>
+
+        {/* Indeterminate: this page has no progress to report, it just waits
+            for the parent window to pick the message up. */}
+        <div
+          style={{
+            width: "100%",
+            height: "8px",
+            borderRadius: "4px",
+            background: colors.border.light,
+            overflow: "hidden",
+          }}
+        >
+          <div className="dv-indeterminate" style={{ background: brand.gold }} />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "9px",
+            color: colors.text.secondary,
+          }}
+        >
+          <Lock size={16} strokeWidth={1.7} color={colors.secondary.main} />
+          <span style={{ font: `400 13px/1.4 ${type.body}` }}>
+            Mandate authorised with your bank
+          </span>
+        </div>
       </motion.div>
     </div>
   );

@@ -1,18 +1,12 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Building2,
   User,
   Mail,
   Phone,
   Calendar,
-  KeyRound,
   ArrowRight,
-  RefreshCw,
-  Sparkles,
   Shield,
-  Clock,
-  Search,
   Check,
   X,
   Loader2,
@@ -27,8 +21,19 @@ import {
   useGetCurrentStatusMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
-import Logo from "../assets/logo.jpeg";
-import { colors, shadows } from "../theme";
+import { colors, shadows, type } from "../theme";
+import {
+  Field,
+  FieldRow,
+  Modal,
+  OtpInput,
+  PageShell,
+  PrimaryButton,
+  Receipt,
+  SecondaryButton,
+  Sheet,
+  SheetTitle,
+} from "../components/chrome";
 
 // The loan product this build onboards against. Staging and production have
 // different product records, so this is set per environment alongside
@@ -145,136 +150,6 @@ const styles = {
     justifyContent: "center",
     background: "rgba(255, 255, 255, 0.2)",
   } as React.CSSProperties,
-};
-
-interface ModalProps {
-  open: boolean;
-  title?: string;
-  message: string;
-  onClose: () => void;
-  onAction?: () => void;
-  actionText?: string;
-}
-
-const ModernModal: React.FC<ModalProps> = ({
-  open,
-  title,
-  message,
-  onClose,
-  onAction,
-  actionText = "Ok, got it",
-}) => {
-  if (!open) return null;
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: "24px",
-              padding: "32px",
-              maxWidth: "400px",
-              width: "100%",
-              boxShadow: shadows.xl,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Sparkles size={24} color={colors.primary[600]} />
-              </div>
-              <button
-                onClick={onClose}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <X size={20} color={colors.neutral[400]} />
-              </button>
-            </div>
-            {title && (
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: colors.neutral[900],
-                  marginBottom: "8px",
-                }}
-              >
-                {title}
-              </h3>
-            )}
-            <p
-              style={{
-                fontSize: "15px",
-                color: colors.neutral[600],
-                lineHeight: 1.6,
-                marginBottom: "24px",
-              }}
-            >
-              {message}
-            </p>
-            <button
-              onClick={onAction || onClose}
-              style={{
-                ...styles.button,
-                width: "100%",
-              }}
-            >
-              {actionText}
-              <ArrowRight size={18} />
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
 };
 
 // Resume Application Modal
@@ -753,14 +628,16 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
                   </strong>{" "}
                   obtaining information from relevant third parties as may be
                   necessary, on my <strong>employment details</strong>,{" "}
-                  <strong>salary payment history</strong>,{" "}
+                  <strong>bank account history</strong>,{" "}
                   <strong>loans</strong>, and{" "}
                   <strong>other related data</strong>, to make a decision on my
                   loan application.
                   <br />
-                  <br />I also consent to the loan amounts being{" "}
-                  <strong>deducted from my salary at source</strong> before
-                  credit to my account; and any outstanding loans being{" "}
+                  <br />I also consent to loan repayments being{" "}
+                  <strong>
+                    collected by direct debit from the bank account I authorise
+                  </strong>
+                  ; and any outstanding loans being{" "}
                   <strong>
                     recovered automatically from any BVN accounts linked to me
                   </strong>{" "}
@@ -902,182 +779,15 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
     </AnimatePresence>
   );
 };
-
-// Progress Steps Component
-const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
-  const steps = [
-    { label: "Get Started", icon: User },
-    { label: "Statement Review", icon: Shield },
-    { label: "Personal Details", icon: Building2 },
-    { label: "Loan Application", icon: Sparkles },
-    { label: "Confirmation", icon: Check },
-  ];
-
-  return (
-    <div style={{ marginBottom: "32px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "24px",
-            right: "24px",
-            height: "3px",
-            background: colors.neutral[200],
-            borderRadius: "2px",
-            zIndex: 0,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "24px",
-            width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
-            maxWidth: "calc(100% - 48px)",
-            height: "3px",
-            background: `linear-gradient(90deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
-            borderRadius: "2px",
-            zIndex: 1,
-            transition: "width 0.5s ease",
-          }}
-        />
-
-        {steps.map((step, index) => {
-          const isCompleted = currentStep > index + 1;
-          const isCurrent = currentStep === index + 1;
-          const Icon = step.icon;
-
-          return (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                zIndex: 2,
-              }}
-            >
-              <motion.div
-                initial={false}
-                animate={{
-                  scale: isCurrent ? 1.1 : 1,
-                  background:
-                    isCompleted || isCurrent
-                      ? `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`
-                      : colors.neutral[100],
-                }}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border:
-                    isCompleted || isCurrent
-                      ? "none"
-                      : `2px solid ${colors.neutral[300]}`,
-                  boxShadow: isCurrent ? shadows.glow : "none",
-                }}
-              >
-                {isCompleted ? (
-                  <Check size={20} color="#fff" />
-                ) : (
-                  <Icon
-                    size={18}
-                    color={isCurrent ? "#fff" : colors.neutral[400]}
-                  />
-                )}
-              </motion.div>
-              <span
-                style={{
-                  marginTop: "8px",
-                  fontSize: "11px",
-                  fontWeight: isCurrent ? 600 : 500,
-                  color: isCurrent ? colors.primary[600] : colors.neutral[500],
-                  textAlign: "center",
-                  maxWidth: "70px",
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Custom Select Component
-
-// Input Component
-const ModernInput: React.FC<{
-  label: string;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  icon: React.ReactNode;
-  maxLength?: number;
-  required?: boolean;
-}> = ({
-  label,
-  type,
-  placeholder,
-  value,
-  onChange,
-  icon,
-  maxLength,
-  required,
-}) => {
-  const [focused, setFocused] = useState(false);
-
-  return (
-    <div style={{ marginBottom: "20px" }}>
-      <label style={styles.label}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <div
-          style={{
-            position: "absolute",
-            left: "16px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: focused ? colors.primary[500] : colors.neutral[400],
-            transition: "color 0.2s ease",
-          }}
-        >
-          {icon}
-        </div>
-        <input
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          maxLength={maxLength}
-          required={required}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            ...styles.input,
-            ...(focused ? styles.inputFocused : {}),
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
 // Formats a Date as the YYYY-MM-DD string a native date input expects,
 // using local calendar parts so the day never shifts across timezones.
+/** yyyy-mm-dd from the date input, rendered the way the receipt reads. */
+const formatDob = (value: string): string => {
+  const [y, m, d] = value.split("-");
+  if (!y || !m || !d) return value;
+  return `${d} / ${m} / ${y}`;
+};
+
 const toDateInputValue = (date: Date): string => {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
@@ -1233,14 +943,14 @@ const [lastName, setLastName] = useState<string>("");
 
   const navigateToStep = (stepNumber: number) => {
     const stepRoutes: { [key: number]: string } = {
-      1: "/",
+      1: "/apply",
       2: "/statement-review",
       3: "/personal-details",
       4: "/loan-application",
       5: "/personal-details",
       6: "/confirmation",
     };
-    window.location.href = stepRoutes[stepNumber] || "/";
+    window.location.href = stepRoutes[stepNumber] || "/apply";
   };
 
   const isAnyLoading =
@@ -1322,7 +1032,7 @@ const [lastName, setLastName] = useState<string>("");
         setIsOTP(true);
       }
     } catch (error: unknown) {
-      console.error("Error during onboarding:", error);
+      
       setLoadingState(false);
       const errData = (error as { data?: { message?: string } })?.data;
       const errMsg = errData?.message ?? "";
@@ -1410,609 +1120,186 @@ const [lastName, setLastName] = useState<string>("");
       });
     }
   };
-
-  const features = [
-    {
-      icon: Sparkles,
-      title: "Quick Approval",
-      description: "Get approved in minutes",
-    },
-    {
-      icon: Shield,
-      title: "Secure Process",
-      description: "Bank-level encryption",
-    },
-    {
-      icon: Clock,
-      title: "Fast Disbursement",
-      description: "Funds in 24 hours",
-    },
-  ];
+  const applicantName = `${firstName} ${lastName}`.trim();
 
   return (
-    <div style={styles.container}>
-      {/* Left Panel - Hero Section */}
-      <div
-        style={{ ...styles.leftPanel, display: "none" }}
-        className="left-panel-desktop"
+    <>
+      <PageShell
+        step={1}
+        headerAction={
+          showResumeForm
+            ? undefined
+            : { label: "Resume application", onClick: () => setShowResumeForm(true) }
+        }
+        aside={
+          <Receipt
+            rows={[
+              { label: "Applicant", value: applicantName || undefined },
+              { label: "Email", value: email || undefined },
+              { label: "Phone", value: phoneNumber || undefined },
+              { label: "Date of birth", value: dob ? formatDob(dob) : undefined },
+            ]}
+            footer="Everything you enter is encrypted and only read by the team underwriting this application."
+          />
+        }
       >
-        <div
-          style={{
-            position: "absolute",
-            top: "-100px",
-            right: "-100px",
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.05)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-150px",
-            left: "-150px",
-            width: "500px",
-            height: "500px",
-            borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        />
+        <Sheet>
+          <SheetTitle
+            title={showResumeForm ? "Pick up where you left off" : "Let's get you started"}
+            subtitle={
+              showResumeForm
+                ? "Enter the email you applied with and we'll find your application."
+                : "Five short steps. We check your bank account, confirm who you are, and show you exactly what you'd repay before you commit to anything."
+            }
+          />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{ maxWidth: "400px", textAlign: "center", zIndex: 1 }}
-        >
-          <h1
-            style={{
-              fontSize: "48px",
-              fontWeight: 800,
-              color: "#fff",
-              marginBottom: "16px",
-              lineHeight: 1.2,
-            }}
+          <form
+            onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: "22px", flexGrow: 1 }}
           >
-            Financial Freedom Starts Here
-          </h1>
-          <p
-            style={{
-              fontSize: "18px",
-              color: "rgba(255, 255, 255, 0.8)",
-              marginBottom: "48px",
-              lineHeight: 1.6,
-            }}
-          >
-            Access quick loans with competitive rates and flexible repayment
-            options.
-          </p>
-
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-              style={styles.featureCard}
-            >
-              <div style={styles.iconWrapper}>
-                <feature.icon size={24} color="#fff" />
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <h3
-                  style={{
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: "16px",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {feature.title}
-                </h3>
-                <p
-                  style={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    fontSize: "14px",
-                  }}
-                >
-                  {feature.description}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-
-      {/* Right Panel - Form Section */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "24px",
-          minHeight: "100vh",
-          overflowY: "auto",
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ width: "100%", maxWidth: "520px" }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "24px",
-            }}
-          >
-            <img
-              src={Logo}
-              alt="Logo"
-              style={{ height: "60px", objectFit: "contain" }}
-            />
-            <button
-              onClick={() => setShowResumeForm(true)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: colors.primary[600],
-                fontSize: "14px",
-                fontWeight: 500,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              Resume Application
-            </button>
-          </div>
-
-          {/* Main Card */}
-          <div style={styles.card}>
-            <ProgressSteps currentStep={1} />
-
-            <div style={{ marginBottom: "32px" }}>
-              <h1
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: colors.neutral[900],
-                  marginBottom: "8px",
-                }}
-              >
-                {showResumeForm ? "Resume Your Application" : "Get Started"}
-              </h1>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: colors.neutral[500],
-                }}
-              >
-                {showResumeForm
-                  ? "Enter your email to continue where you left off."
-                  : "Complete the form below to begin your loan application."}
-              </p>
-            </div>
-
-            <form onSubmit={isOTP ? handleOTPSubmit : handleSubmit}>
-              {showResumeForm ? (
-                <div>
-                  <ModernInput
-                    label="Email Address"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={resumeEmail}
-                    onChange={(e) => setResumeEmail(e.target.value)}
-                    icon={<Mail size={20} />}
-                    required
-                  />
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <button
-                      type="button"
+            {showResumeForm ? (
+              <>
+                <Field
+                  label="Email address"
+                  inputType="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="Enter your registered email"
+                  value={resumeEmail}
+                  onChange={setResumeEmail}
+                  icon={Mail}
+                  hint="We'll look up the application filed under this address."
+                />
+                <div style={{ display: "flex", gap: "16px", marginTop: "auto" }}>
+                  <SecondaryButton
+                    icon={ArrowLeft}
+                    onClick={() => {
+                      setShowResumeForm(false);
+                      setResumeEmail("");
+                    }}
+                  >
+                    Back
+                  </SecondaryButton>
+                  <div style={{ flexGrow: 1 }}>
+                    <PrimaryButton
                       onClick={handleResumeApplication}
-                      disabled={statusLoading || !resumeEmail}
-                      style={{
-                        ...styles.button,
-                        flex: 1,
-                        opacity: statusLoading || !resumeEmail ? 0.7 : 1,
-                        cursor:
-                          statusLoading || !resumeEmail
-                            ? "not-allowed"
-                            : "pointer",
-                      }}
+                      loading={statusLoading}
+                      disabled={!resumeEmail}
                     >
-                      {statusLoading ? (
-                        <>
-                          <Loader2
-                            size={18}
-                            className="animate-spin"
-                            style={{ animation: "spin 1s linear infinite" }}
-                          />
-                          Finding...
-                        </>
-                      ) : (
-                        <>
-                          Resume
-                          <ArrowRight size={18} />
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowResumeForm(false)}
-                      style={{
-                        ...styles.button,
-                        flex: 1,
-                        background: colors.neutral[100],
-                        color: colors.neutral[700],
-                        boxShadow: "none",
-                      }}
-                    >
-                      Cancel
-                    </button>
+                      {statusLoading ? "Finding your application" : "Resume"}
+                    </PrimaryButton>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "16px",
-                    }}
-                  >
-                    <ModernInput
-                      label="First Name"
-                      type="text"
-                      placeholder="Enter first name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      icon={<User size={20} />}
-                      required
-                    />
-                    <ModernInput
-                      label="Last Name"
-                      type="text"
-                      placeholder="Enter last name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      icon={<User size={20} />}
-                      required
-                    />
-                  </div>
+              </>
+            ) : (
+              <>
+                <FieldRow>
+                  <Field
+                    label="First name"
+                    autoComplete="given-name"
+                    placeholder="Enter first name"
+                    value={firstName}
+                    onChange={setFirstName}
+                    icon={User}
+                  />
+                  <Field
+                    label="Last name"
+                    autoComplete="family-name"
+                    placeholder="Enter last name"
+                    value={lastName}
+                    onChange={setLastName}
+                    icon={User}
+                  />
+                </FieldRow>
 
-                  <ModernInput
-                    label="Email Address"
-                    type="email"
+                <FieldRow>
+                  <Field
+                    label="Email address"
+                    inputType="email"
+                    inputMode="email"
+                    autoComplete="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    icon={<Mail size={20} />}
-                    required
+                    onChange={setEmail}
+                    icon={Mail}
+                    hint="We send your offer letter here."
                   />
-
-                  <ModernInput
-                    label="Phone Number"
-                    type="tel"
+                  <Field
+                    label="Phone number"
+                    inputType="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     placeholder="Enter your phone number"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    icon={<Phone size={20} />}
-                    required
+                    onChange={setPhoneNumber}
+                    icon={Phone}
                     maxLength={11}
+                    hint="Used for one-time codes only."
                   />
+                </FieldRow>
 
-                  <div
+                <Field
+                  label="Date of birth"
+                  inputType="date"
+                  value={dob}
+                  onChange={setDob}
+                  icon={Calendar}
+                  hint="You must be 18 or older to apply."
+                  inputAttrs={{ max: toDateInputValue(new Date()), required: true }}
+                />
+
+                {isOTP && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <OtpInput
+                      label="Enter the code we emailed you"
+                      value={otp}
+                      onChange={setOtp}
+                      hint={`Sent to ${email || "your email address"}.`}
+                      action={
+                        resendOTP
+                          ? {
+                              label: resendLoading ? "Resending..." : "Resend code",
+                              onClick: handleResendOTP,
+                              disabled: resendLoading,
+                            }
+                          : undefined
+                      }
+                    />
+                  </motion.div>
+                )}
+
+                <div
+                  style={{
+                    marginTop: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                  }}
+                >
+                  <PrimaryButton submit loading={isAnyLoading} icon={ArrowRight}>
+                    {isAnyLoading ? "Processing" : isOTP ? "Verify code" : "Get started"}
+                  </PrimaryButton>
+                  <p
                     style={{
-                      marginBottom: "20px",
-                      width: "100%",
-                      maxWidth: "100%",
+                      margin: 0,
+                      textAlign: "center",
+                      font: `400 12px/1.5 ${type.body}`,
+                      color: colors.text.secondary,
                     }}
                   >
-                    <label style={styles.label}>Date of Birth</label>
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: "16px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: colors.neutral[400],
-                          pointerEvents: "none",
-                          zIndex: 1,
-                        }}
-                      >
-                        <Calendar size={20} />
-                      </div>
-                      <input
-                        type="date"
-                        value={dob}
-                        onChange={(e) => setDob(e.target.value)}
-                        max={toDateInputValue(new Date())}
-                        required
-                        style={{
-                          ...styles.input,
-                          paddingLeft: "48px",
-                          width: "100%",
-                          maxWidth: "100%",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {isOTP && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ModernInput
-                        label="Email OTP"
-                        type="text"
-                        placeholder="Enter 6-digit OTP"
-                        value={otp}
-                        onChange={(e) => {
-                          if (
-                            e.target.value.length <= 6 &&
-                            /^\d*$/.test(e.target.value)
-                          ) {
-                            setOtp(e.target.value);
-                          }
-                        }}
-                        icon={<KeyRound size={20} />}
-                        maxLength={6}
-                        required
-                      />
-                    </motion.div>
-                  )}
-
-                  {resendOTP && (
-                    <motion.button
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={resendLoading}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: resendLoading
-                          ? colors.neutral[400]
-                          : colors.primary[600],
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: resendLoading ? "not-allowed" : "pointer",
-                        textDecoration: "underline",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        marginBottom: "16px",
-                        padding: 0,
-                      }}
-                    >
-                      <RefreshCw
-                        size={14}
-                        className={resendLoading ? "animate-spin" : ""}
-                      />
-                      {resendLoading
-                        ? "Resending..."
-                        : "Didn't get the OTP? Resend"}
-                    </motion.button>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isAnyLoading}
-                    style={{
-                      ...styles.button,
-                      ...(isAnyLoading ? styles.buttonDisabled : {}),
-                    }}
-                  >
-                    {isAnyLoading ? (
-                      <>
-                        <Loader2
-                          size={20}
-                          className="animate-spin"
-                          style={{ animation: "spin 1s linear infinite" }}
-                        />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {isOTP ? "Verify OTP" : "Get Started"}
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Resume Application Section */}
-                  {!isOTP && !showResumeForm && (
-                    <div
-                      style={{
-                        textAlign: "center",
-                        marginTop: "20px",
-                        paddingTop: "20px",
-                        borderTop: `1px solid ${colors.neutral[200]}`,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: colors.neutral[600],
-                          marginBottom: "8px",
-                        }}
-                      >
-                        Already started an application?
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowResumeForm(true)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: colors.primary[600],
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          textDecoration: "underline",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <RotateCcw size={14} />
-                        Resume Application
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Resume Form */}
-                  {!isOTP && showResumeForm && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                      style={{
-                        marginTop: "20px",
-                        paddingTop: "20px",
-                        borderTop: `1px solid ${colors.neutral[200]}`,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: colors.neutral[700],
-                          marginBottom: "12px",
-                        }}
-                      >
-                        Resume your application
-                      </p>
-                      <ModernInput
-                        label="Email Address"
-                        type="email"
-                        placeholder="Enter your registered email"
-                        value={resumeEmail}
-                        onChange={(e) => setResumeEmail(e.target.value)}
-                        icon={<Mail size={20} />}
-                        required
-                      />
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowResumeForm(false);
-                            setResumeEmail("");
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "12px 20px",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            border: `2px solid ${colors.neutral[200]}`,
-                            borderRadius: "12px",
-                            cursor: "pointer",
-                            background: "#fff",
-                            color: colors.neutral[700],
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          <ArrowLeft size={16} />
-                          Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleResumeApplication}
-                          disabled={statusLoading || !resumeEmail}
-                          style={{
-                            flex: 2,
-                            padding: "12px 20px",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            border: "none",
-                            borderRadius: "12px",
-                            cursor:
-                              statusLoading || !resumeEmail
-                                ? "not-allowed"
-                                : "pointer",
-                            background:
-                              statusLoading || !resumeEmail
-                                ? colors.neutral[300]
-                                : `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.primary[600]} 100%)`,
-                            color: "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          {statusLoading ? (
-                            <>
-                              <Loader2
-                                size={16}
-                                className="animate-spin"
-                                style={{ animation: "spin 1s linear infinite" }}
-                              />
-                              Checking...
-                            </>
-                          ) : (
-                            <>
-                              Find Application
-                              <Search size={16} />
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </>
-              )}
-            </form>
-          </div>
-
-          {/* Footer */}
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "24px",
-              fontSize: "13px",
-              color: colors.neutral[500],
-            }}
-          >
-            By continuing, you agree to our{" "}
-            <a
-              href="/terms"
-              style={{ color: colors.primary[600], textDecoration: "none" }}
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="/privacy"
-              style={{ color: colors.primary[600], textDecoration: "none" }}
-            >
-              Privacy Policy
-            </a>
-          </p>
-        </motion.div>
-      </div>
-
+                    Checking your eligibility does not affect your credit score.
+                  </p>
+                </div>
+              </>
+            )}
+          </form>
+        </Sheet>
+      </PageShell>
       {/* Consent Modal */}
       <ConsentModal
         open={showConsentModal}
@@ -2030,7 +1317,7 @@ const [lastName, setLastName] = useState<string>("");
       />
 
       {/* Modal */}
-      <ModernModal
+      <Modal
         open={modal.open}
         title={modal.title}
         message={modal.message}
@@ -2218,13 +1505,8 @@ const [lastName, setLastName] = useState<string>("");
         .animate-spin {
           animation: spin 1s linear infinite;
         }
-        @media (min-width: 1024px) {
-          .left-panel-desktop {
-            display: flex !important;
-          }
-        }
       `}</style>
-    </div>
+    </>
   );
 };
 
