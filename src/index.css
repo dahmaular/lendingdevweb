@@ -163,3 +163,28 @@ code {
 .dv-range:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 4px rgba(230, 190, 88, 0.45);
 }
+
+/* Indeterminate progress for the bank-authorisation return page, which has no
+   real progress to report — it is waiting on the parent window. */
+@keyframes dv-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+.dv-indeterminate {
+  width: 32%;
+  height: 100%;
+  border-radius: 4px;
+  animation: dv-slide 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-indeterminate {
+    width: 100%;
+    animation: none;
+  }
+}
