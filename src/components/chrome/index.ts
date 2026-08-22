@@ -9,7 +9,7 @@
 export { default as PageShell } from "./PageShell";
 export { default as AppHeader } from "./AppHeader";
 export { default as StepRibbon, STEPS } from "./StepRibbon";
-export { default as Sheet, SheetTitle } from "./Sheet";
+export { default as Sheet, SheetTitle, SectionLabel } from "./Sheet";
 export { default as Receipt } from "./Receipt";
 export type { ReceiptRow } from "./Receipt";
 export { default as Callout } from "./Callout";

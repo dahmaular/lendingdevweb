@@ -1,4 +1,5 @@
 import React from "react";
+import { LucideIcon } from "lucide-react";
 import { colors, radii, shadows, type } from "../../theme";
 import { useIsNarrow } from "./useMediaQuery";
 
@@ -66,6 +67,30 @@ export const SheetTitle: React.FC<SheetTitleProps> = ({ title, subtitle }) => (
         {subtitle}
       </p>
     )}
+  </div>
+);
+
+interface SectionLabelProps {
+  icon?: LucideIcon;
+  children: React.ReactNode;
+}
+
+/** Divides a long form into the parts an applicant thinks of separately. */
+export const SectionLabel: React.FC<SectionLabelProps> = ({ icon: Icon, children }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "6px" }}>
+    {Icon && <Icon size={17} strokeWidth={1.8} color={colors.secondary.main} />}
+    <span
+      style={{
+        font: `600 12px/1 ${type.body}`,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: colors.text.secondary,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+    <span style={{ height: "1px", flexGrow: 1, background: colors.border.light }} />
   </div>
 );
 
