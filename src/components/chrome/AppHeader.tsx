@@ -1,7 +1,7 @@
 import React from "react";
 import { HelpCircle } from "lucide-react";
 import Logo from "../../assets/devpay-logo.png";
-import { brand, colors, type } from "../../theme";
+import { brand, colors, controls, type } from "../../theme";
 import { useIsNarrow } from "./useMediaQuery";
 
 interface AppHeaderProps {
@@ -57,7 +57,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ action, showHelp = true }) => {
             style={{
               background: "transparent",
               border: "none",
-              padding: "6px 0",
+              // padded to clear the 44px touch target; the gold rule stays on
+              // the text, so the extra height is invisible
+              padding: "12px 0",
+              minHeight: `${controls.minTapTarget}px`,
               cursor: "pointer",
               font: `600 14px/1 ${type.body}`,
               color: colors.primary.main,
