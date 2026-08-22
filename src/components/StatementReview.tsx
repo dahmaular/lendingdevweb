@@ -13,7 +13,6 @@ import {
   ChevronDown,
   Search,
   Check,
-  X,
   Loader2,
   Landmark,
   User,
@@ -27,6 +26,7 @@ import {
 } from "../store/services/baseApi";
 import Logo from "../assets/devpay-logo.png";
 import { colors, shadows } from "../theme";
+import { Modal } from "./chrome";
 
 const getBackendErrorMessage = (err: unknown): string | undefined => {
   if (err && typeof err === "object" && "data" in err) {
@@ -205,129 +205,6 @@ const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
         })}
       </div>
     </div>
-  );
-};
-
-interface ModalProps {
-  open: boolean;
-  title?: string;
-  message: string;
-  onClose: () => void;
-  onAction?: () => void;
-  actionText?: string;
-}
-
-const ModernModal: React.FC<ModalProps> = ({
-  open,
-  title,
-  message,
-  onClose,
-  onAction,
-  actionText = "Ok, got it",
-}) => {
-  if (!open) return null;
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: "24px",
-              padding: "32px",
-              maxWidth: "400px",
-              width: "100%",
-              boxShadow: shadows.xl,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Sparkles size={24} color={colors.primary[600]} />
-              </div>
-              <button
-                onClick={onClose}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "8px",
-                  borderRadius: "8px",
-                }}
-              >
-                <X size={20} color={colors.neutral[400]} />
-              </button>
-            </div>
-            {title && (
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: colors.neutral[900],
-                  marginBottom: "8px",
-                }}
-              >
-                {title}
-              </h3>
-            )}
-            <p
-              style={{
-                fontSize: "15px",
-                color: colors.neutral[600],
-                lineHeight: 1.6,
-                marginBottom: "24px",
-              }}
-            >
-              {message}
-            </p>
-            <button
-              onClick={onAction || onClose}
-              style={{ ...styles.button, width: "100%" }}
-            >
-              {actionText}
-              <ArrowRight size={18} />
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 };
 
@@ -895,7 +772,7 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
           </p>
         </motion.div>
       </div>
-      <ModernModal
+      <Modal
         open={modal.open}
         title={modal.title}
         message={modal.message}
