@@ -24,54 +24,7 @@ import {
 } from "lucide-react";
 import { useSubmitLoanMutation } from "../store/services/baseApi";
 import { MONO_COMPLETE_MESSAGE } from "./monoComplete";
-
-// ============== Color Theme ==============
-const colors = {
-  primary: {
-    main: "#1E88E5",
-    light: "#64B5F6",
-    dark: "#1565C0",
-    gradient: "linear-gradient(135deg, #1E88E5 0%, #1565C0 100%)",
-  },
-  secondary: {
-    main: "#00ACC1",
-    light: "#4DD0E1",
-    dark: "#00838F",
-  },
-  accent: {
-    orange: "#FF6B35",
-    green: "#00C853",
-    purple: "#7C4DFF",
-  },
-  background: {
-    main: "#F8FAFC",
-    card: "#FFFFFF",
-    elevated: "rgba(255, 255, 255, 0.95)",
-  },
-  text: {
-    primary: "#1E293B",
-    secondary: "#64748B",
-    muted: "#94A3B8",
-  },
-  border: {
-    light: "#E2E8F0",
-    focus: "#1E88E5",
-  },
-  status: {
-    success: "#00C853",
-    error: "#FF4757",
-    warning: "#FFB020",
-  },
-};
-
-const shadows = {
-  sm: "0 1px 2px rgba(0, 0, 0, 0.05)",
-  md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-  lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-  xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-  glow: "0 0 20px rgba(30, 136, 229, 0.3)",
-  card: "0 4px 20px rgba(0, 0, 0, 0.08)",
-};
+import { colors, shadows } from "../theme";
 
 // ============== Loan Duration Options ==============
 const LOAN_DURATIONS = [

@@ -2,13 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-
-const colors = {
-  primary: { main: "#1E88E5", dark: "#1565C0" },
-  background: { main: "#F8FAFC" },
-  text: { primary: "#1E293B", secondary: "#64748B" },
-  status: { success: "#00C853" },
-};
+import { colors } from "../theme";
 
 // The message type the parent (loanApplication.tsx) listens for.
 export const MONO_COMPLETE_MESSAGE = "mono-mandate-complete";
