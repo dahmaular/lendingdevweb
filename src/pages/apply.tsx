@@ -943,14 +943,14 @@ const [lastName, setLastName] = useState<string>("");
 
   const navigateToStep = (stepNumber: number) => {
     const stepRoutes: { [key: number]: string } = {
-      1: "/",
+      1: "/apply",
       2: "/statement-review",
       3: "/personal-details",
       4: "/loan-application",
       5: "/personal-details",
       6: "/confirmation",
     };
-    window.location.href = stepRoutes[stepNumber] || "/";
+    window.location.href = stepRoutes[stepNumber] || "/apply";
   };
 
   const isAnyLoading =

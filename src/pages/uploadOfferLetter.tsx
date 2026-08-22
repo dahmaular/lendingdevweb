@@ -108,7 +108,7 @@ const UploadOfferLetter: React.FC = () => {
         setShowSuccess(true);
         setTimeout(() => {
           // Navigate or close after success
-          window.location.href = "/";
+          window.location.href = "/apply";
         }, 3000);
       }
     } catch (err: any) {

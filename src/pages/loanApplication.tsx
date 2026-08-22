@@ -67,7 +67,7 @@ const LoanApplication: React.FC = () => {
       setLoanAmount(Math.min(amount, 50000));
       setInputValue(formatCurrency(Math.min(amount, 50000)));
     } else {
-      navigate("/");
+      navigate("/apply");
     }
   }, [navigate]);
 
@@ -163,7 +163,7 @@ const LoanApplication: React.FC = () => {
     try {
       const loanId = localStorage.getItem("loanId");
       if (!loanId) {
-        navigate("/");
+        navigate("/apply");
         return;
       }
 

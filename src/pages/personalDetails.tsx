@@ -1379,7 +1379,7 @@ const PersonalDetails: React.FC = () => {
     try {
       const loanId = localStorage.getItem("loanId");
       if (!loanId) {
-        navigate("/");
+        navigate("/apply");
         return;
       }
 

@@ -212,7 +212,7 @@ const ConfirmationPage: React.FC = () => {
   useEffect(() => {
     const loanId = localStorage.getItem("loanId");
     if (!loanId) {
-      navigate("/");
+      navigate("/apply");
       return;
     }
 
@@ -241,7 +241,7 @@ const ConfirmationPage: React.FC = () => {
     localStorage.removeItem("loanId");
     localStorage.removeItem("maxLoanEligible");
     localStorage.removeItem("loanDetails");
-    navigate("/");
+    navigate("/apply");
   };
 
   const summary: [string, string][] = [
