@@ -3,21 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
-  User,
-  FileText,
-  CreditCard,
   Download,
   Home,
   PartyPopper,
-  Wallet,
-  Calendar,
-  Percent,
   Clock,
-  Shield,
-  Sparkles,
+  Check,
 } from "lucide-react";
-import { colors, shadows } from "../theme";
-import Logo from "../assets/devpay-logo.png";
+import { brand, colors, radii, shadows, type } from "../theme";
+import {
+  Callout,
+  PageShell,
+  PrimaryButton,
+  Receipt,
+  SecondaryButton,
+  Sheet,
+} from "./chrome";
 
 // ============== Styles ==============
 const styles = {
@@ -283,50 +283,6 @@ const styles = {
   } as React.CSSProperties,
 };
 
-// ============== Progress Steps Component ==============
-const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
-  const steps = [
-    { icon: User, label: "Start" },
-    { icon: FileText, label: "Review" },
-    { icon: User, label: "Details" },
-    { icon: CreditCard, label: "Loan" },
-    { icon: CheckCircle, label: "Confirm" },
-  ];
-
-  return (
-    <div style={styles.progressContainer}>
-      <div style={styles.progressSteps}>
-        {steps.map((step, index) => {
-          const StepIcon = step.icon;
-          const isActive = index + 1 === currentStep;
-          const isCompleted = index + 1 < currentStep;
-
-          return (
-            <React.Fragment key={index}>
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div style={styles.stepCircle(isActive, isCompleted)}>
-                  {isCompleted || isActive ? (
-                    <CheckCircle size={18} />
-                  ) : (
-                    <StepIcon size={18} />
-                  )}
-                </div>
-              </motion.div>
-              {index < steps.length - 1 && (
-                <div style={styles.stepLine(isCompleted || isActive)} />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 // ============== Format Currency ==============
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat("en-NG", {
@@ -409,7 +365,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
               left: 0,
               right: 0,
               bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
+              background: "rgba(11, 38, 33, 0.42)",
               backdropFilter: "blur(4px)",
               zIndex: 1000,
               display: "flex",
@@ -424,13 +380,14 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: "#FFFFFF",
-                borderRadius: "24px",
+                background: colors.background.card,
+                border: `1px solid ${colors.border.light}`,
+                borderRadius: `${radii.lg}px`,
+                boxShadow: shadows.xl,
                 padding: "40px 32px",
                 maxWidth: "400px",
                 width: "100%",
                 textAlign: "center",
-                boxShadow: shadows.xl,
               }}
             >
               <motion.div
@@ -439,13 +396,13 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 style={styles.successIcon}
               >
-                <PartyPopper size={40} color={colors.status.success} />
+                <PartyPopper size={38} color={colors.primary.main} />
               </motion.div>
 
               <h2
                 style={{
-                  fontSize: "24px",
-                  fontWeight: 700,
+                  font: `700 26px/1.15 ${type.display}`,
+                  letterSpacing: "-0.02em",
                   color: colors.text.primary,
                   margin: "0 0 12px",
                 }}
@@ -454,7 +411,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
               </h2>
               <p
                 style={{
-                  fontSize: "15px",
+                  font: `400 15px/1.55 ${type.body}`,
                   color: colors.text.secondary,
                   lineHeight: 1.6,
                   margin: "0 0 24px",
@@ -464,18 +421,9 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
                 receive an SMS and email notification within 24 hours.
               </p>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={onClose}
-                style={{
-                  ...styles.button,
-                  width: "100%",
-                }}
-              >
-                <CheckCircle size={18} />
-                View Application Details
-              </motion.button>
+              <PrimaryButton icon={CheckCircle} iconPosition="start" onClick={onClose}>
+                View application details
+              </PrimaryButton>
             </motion.div>
           </motion.div>
           <Confetti />
@@ -545,249 +493,187 @@ const ConfirmationPage: React.FC = () => {
     navigate("/");
   };
 
+  const summary: [string, string][] = [
+    ["Loan amount", formatCurrency(loanData.loanAmount)],
+    ["Interest rate", `${loanData.interestRate * 100}% per month`],
+    ["Duration", `${loanData.duration} month${loanData.duration > 1 ? "s" : ""}`],
+    ["Processing fee (1%)", formatCurrency(loanData.processingFee)],
+    ["Monthly payment", formatCurrency(loanData.monthlyPayment)],
+    ["Total interest", formatCurrency(loanData.totalInterest)],
+  ];
+
   return (
-    <div style={styles.container}>
-      <div style={styles.innerContainer}>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={styles.header}
-        >
-          <img src={Logo} alt="devpay" style={styles.logo} />
-        </motion.div>
-
-        <ProgressSteps currentStep={5} />
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          style={styles.card}
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            style={styles.successIcon}
-          >
-            <CheckCircle size={40} color={colors.status.success} />
-          </motion.div>
-
-          <h1 style={styles.title}>Application Complete!</h1>
-          <p style={styles.subtitle}>
-            Your loan application has been submitted successfully. Here&apos;s a
-            summary of your application.
-          </p>
-
-          {/* Reference Number */}
-          {/* <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            style={styles.referenceBox}
-          >
-            <div>
-              <p style={styles.referenceLabel}>Application Reference</p>
-              <p style={styles.referenceNumber}>{loanData.referenceNumber}</p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleCopyReference}
-              style={styles.copyButton}
-            >
-              {copied ? (
-                <Check size={20} color={colors.status.success} />
-              ) : (
-                <Copy size={20} color={colors.primary.main} />
-              )}
-            </motion.button>
-          </motion.div> */}
-
-          {/* Status Badge */}
-          <div style={{ textAlign: "center", marginBottom: "24px" }}>
-            <motion.span
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
-              style={styles.statusBadge}
-            >
-              <Clock size={16} />
-              {loanData.status}
-            </motion.span>
-          </div>
-
-          {/* Loan Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            style={styles.summaryCard}
-          >
-            <div style={styles.summaryHeader}>
-              <Sparkles size={20} color={colors.primary.main} />
-              <span
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: colors.text.primary,
-                }}
-              >
-                Loan Summary
-              </span>
-            </div>
-
-            <div style={styles.summaryRow}>
-              <div style={styles.summaryLabel}>
-                <Wallet size={16} color={colors.text.muted} />
-                Loan Amount
-              </div>
-              <span style={styles.summaryValue}>
-                {formatCurrency(loanData.loanAmount)}
-              </span>
-            </div>
-
-            <div style={styles.summaryRow}>
-              <div style={styles.summaryLabel}>
-                <Calendar size={16} color={colors.text.muted} />
-                Duration
-              </div>
-              <span style={styles.summaryValue}>
-                {loanData.duration} month{loanData.duration > 1 ? "s" : ""}
-              </span>
-            </div>
-
-            <div style={styles.summaryRow}>
-              <div style={styles.summaryLabel}>
-                <Percent size={16} color={colors.text.muted} />
-                Interest Rate
-              </div>
-              <span style={styles.summaryValue}>
-                {loanData.interestRate * 100}% per month
-              </span>
-            </div>
-
-            <div style={styles.summaryRow}>
-              <div style={styles.summaryLabel}>
-                <Clock size={16} color={colors.text.muted} />
-                Monthly Payment
-              </div>
-              <span
-                style={{ ...styles.summaryValue, color: colors.secondary.main }}
-              >
-                {formatCurrency(loanData.monthlyPayment)}
-              </span>
-            </div>
-
-            {/* <div style={styles.summaryRow}>
-              <div style={styles.summaryLabel}>
-                <Building2 size={16} color={colors.text.muted} />
-                Disbursement Account
-              </div>
-              <span style={styles.summaryValue}>
-                {loanData.bankName} ({loanData.accountNumber})
-              </span>
-            </div> */}
-
-            <div style={styles.totalRow}>
-              <span style={styles.totalLabel}>Total Repayment</span>
-              <span style={styles.totalValue}>
-                {formatCurrency(loanData.totalRepayment)}
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Info Box */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            style={styles.infoBox}
-          >
-            <Shield
-              size={20}
-              color={colors.status.warning}
-              style={{ flexShrink: 0, marginTop: "2px" }}
-            />
-            <div>
-              <p
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: colors.text.primary,
-                  margin: "0 0 4px",
-                }}
-              >
-                What happens next?
-              </p>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: colors.text.secondary,
-                  margin: 0,
-                  lineHeight: 1.6,
-                }}
-              >
-                Your application will be reviewed within 24 hours. Once
-                approved, the loan will be disbursed to your verified bank
-                account.
-              </p>
-            </div>
-          </motion.div>
-
-          <div style={styles.buttonGroup}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={styles.buttonSecondary}
-              onClick={() => {
-                /* Download functionality */
+    <>
+      <PageShell
+        step={5}
+        showHelp={false}
+        aside={
+          <Receipt
+            title="On file"
+            rows={[
+              { label: "Reference", value: loanData.referenceNumber },
+              { label: "Disbursement account", value: loanData.bankName },
+              { label: "Account number", value: loanData.accountNumber },
+              { label: "Submitted", value: loanData.submittedDate },
+            ]}
+            footer="Keep your reference handy if you contact support about this application."
+          />
+        }
+      >
+        <Sheet>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: `${radii.lg + 2}px`,
+                background: brand.gold,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
-              <Download size={18} />
-              Download
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: shadows.lg }}
-              whileTap={{ scale: 0.98 }}
-              style={styles.button}
-              onClick={handleNewApplication}
-            >
-              <Home size={18} />
-              New Application
-            </motion.button>
+              <Check size={30} strokeWidth={2.6} color={colors.primary.main} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <h1
+                style={{
+                  margin: 0,
+                  font: `700 clamp(26px, 3.4vw, 36px)/1.1 ${type.display}`,
+                  letterSpacing: "-0.025em",
+                  color: colors.text.primary,
+                }}
+              >
+                Application complete
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  font: `400 16px/1.5 ${type.body}`,
+                  color: colors.text.secondary,
+                }}
+              >
+                Your loan application has been submitted successfully. Here&rsquo;s a summary of
+                your application.
+              </p>
+            </div>
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            marginTop: "24px",
-          }}
-        >
-          <Shield size={14} color={colors.text.muted} />
-          <p
+          <div
             style={{
-              fontSize: "13px",
-              color: colors.text.muted,
-              margin: 0,
+              display: "inline-flex",
+              alignSelf: "flex-start",
+              alignItems: "center",
+              gap: "9px",
+              padding: "9px 16px",
+              borderRadius: `${radii.pill}px`,
+              background: "rgba(230, 190, 88, 0.35)",
+              color: colors.text.primary,
+              font: `600 13px/1 ${type.body}`,
             }}
           >
-            Application submitted on {loanData.submittedDate}
-          </p>
-        </motion.div>
-      </div>
+            <Clock size={16} strokeWidth={1.9} />
+            {loanData.status} &middot; usually within 24 hours
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "0 40px",
+            }}
+          >
+            {summary.map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "16px",
+                  padding: "11px 0",
+                  borderBottom: `1px dashed ${colors.border.light}`,
+                }}
+              >
+                <span style={{ font: `400 14px/1.3 ${type.body}`, color: colors.text.secondary }}>
+                  {label}
+                </span>
+                <span style={{ font: `600 15px/1 ${type.display}`, color: colors.text.primary }}>
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              padding: "20px 24px",
+              borderRadius: `${radii.lg - 2}px`,
+              background: colors.primary.main,
+              borderBottom: `4px solid ${brand.gold}`,
+            }}
+          >
+            <span style={{ font: `600 15px/1 ${type.body}`, color: colors.background.main }}>
+              Total repayment
+            </span>
+            <span
+              style={{
+                font: `700 clamp(24px, 3vw, 32px)/1 ${type.display}`,
+                letterSpacing: "-0.025em",
+                color: brand.gold,
+              }}
+            >
+              {formatCurrency(loanData.totalRepayment)}
+            </span>
+          </div>
+
+          <Callout icon={Clock} title="What happens next?">
+            Your application will be reviewed within 24 hours. Once approved, the loan will be
+            disbursed to your verified bank account.
+          </Callout>
+
+          <div
+            style={{
+              marginTop: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+            }}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              <SecondaryButton icon={Download} onClick={() => window.print()}>
+                Download summary
+              </SecondaryButton>
+              <div style={{ flexGrow: 1, minWidth: "200px" }}>
+                <PrimaryButton icon={Home} iconPosition="start" onClick={handleNewApplication}>
+                  New application
+                </PrimaryButton>
+              </div>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                textAlign: "center",
+                font: `400 12px/1.5 ${type.body}`,
+                color: colors.text.secondary,
+              }}
+            >
+              Application submitted on {loanData.submittedDate}.
+            </p>
+          </div>
+        </Sheet>
+      </PageShell>
 
       <SuccessModal isOpen={showModal} onClose={() => setShowModal(false)} />
-    </div>
+    </>
   );
 };
+
 
 export default ConfirmationPage;
