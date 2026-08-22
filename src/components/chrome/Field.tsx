@@ -105,6 +105,9 @@ export interface FieldProps {
   maxLength?: number;
   disabled?: boolean;
   autoComplete?: string;
+  /** Escape hatch for native attributes the wrapper does not model — a date
+   *  input's max, a numeric input's step. */
+  inputAttrs?: React.InputHTMLAttributes<HTMLInputElement>;
 }
 
 export const Field: React.FC<FieldProps> = ({
@@ -123,6 +126,7 @@ export const Field: React.FC<FieldProps> = ({
   maxLength,
   disabled,
   autoComplete,
+  inputAttrs,
 }) => {
   const id = useId();
   const [focused, setFocused] = useState(false);
@@ -143,6 +147,7 @@ export const Field: React.FC<FieldProps> = ({
           </span>
         )}
         <input
+          {...inputAttrs}
           id={id}
           type={inputType}
           inputMode={inputMode}

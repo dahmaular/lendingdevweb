@@ -110,3 +110,20 @@ code {
   outline: 2px solid #0b2621;
   outline-offset: 2px;
 }
+
+/* Loading spinner used by the shared buttons. */
+@keyframes dv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dv-spin {
+  animation: dv-spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-spin {
+    animation-duration: 2.4s;
+  }
+}
