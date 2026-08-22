@@ -1,6 +1,6 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Check,
@@ -15,15 +15,8 @@ import {
 } from "lucide-react";
 import { brand, colors, controls, radii, shadows, type } from "../theme";
 import { AppHeader, PrimaryButton, STEPS } from "../components/chrome";
-import { useIsNarrow } from "../components/chrome/useMediaQuery";
-import {
-  LOAN_DURATIONS,
-  MIN_LOAN_AMOUNT,
-  formatCurrency,
-  monthlyRatePercent,
-  processingFeePercent,
-  quote,
-} from "../lending";
+import { useIsNarrow, useMediaQuery } from "../components/chrome/useMediaQuery";
+import { MIN_LOAN_AMOUNT, formatCurrency } from "../lending";
 
 /**
  * The public landing page. The application flow lives at /apply.
@@ -59,11 +52,28 @@ const REQUIREMENTS: { icon: LucideIcon; title: string; body: string }[] = [
   },
 ];
 
-// A worked example at a round figure, computed with the same function the loan
-// screen uses — never typed out by hand.
-const EXAMPLE_PRINCIPAL = 100000;
-const EXAMPLE_MONTHS = 3;
-const example = quote(EXAMPLE_PRINCIPAL, EXAMPLE_MONTHS);
+/**
+ * Hero slides. Each headline and line is copy that already existed in the
+ * product — the first pair is the old hero panel, the second is the Get started
+ * subtitle, the third is what the confirmation screen tells applicants. Nothing
+ * here is a new claim.
+ */
+const SLIDES: { headline: string; body: string }[] = [
+  {
+    headline: "Financial Freedom Starts Here",
+    body: "Access quick loans with competitive rates and flexible repayment options.",
+  },
+  {
+    headline: "Get approved in minutes",
+    body: "Five short steps. We check your bank account, confirm who you are, and show you exactly what you'd repay before you commit to anything.",
+  },
+  {
+    headline: "Funds in 24 hours",
+    body: "Your application is reviewed within 24 hours. Once approved, the loan is disbursed to the bank account you verified.",
+  },
+];
+
+const SLIDE_INTERVAL_MS = 6500;
 
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
@@ -105,6 +115,23 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const narrow = useIsNarrow();
   const apply = () => navigate("/apply");
+
+  const [slide, setSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+  // Anyone who has asked for less motion gets the slides without the sliding;
+  // they can still move between them with the controls.
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+
+  useEffect(() => {
+    if (paused || reduceMotion) return;
+    // Keyed on `slide` as well, so choosing one by hand restarts the clock
+    // instead of being advanced out from under you a moment later.
+    const id = window.setTimeout(
+      () => setSlide((i) => (i + 1) % SLIDES.length),
+      SLIDE_INTERVAL_MS
+    );
+    return () => window.clearTimeout(id);
+  }, [slide, paused, reduceMotion]);
 
   const section: React.CSSProperties = {
     display: "flex",
@@ -176,37 +203,122 @@ const Home: React.FC = () => {
         }}
       >
         {/* ------------------------------------------------------------ hero */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          style={{ display: "flex", flexDirection: "column", gap: "26px", maxWidth: "780px" }}
+        <section
+          aria-roledescription="carousel"
+          aria-label="What devpay offers"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={() => setPaused(false)}
+          style={{ display: "flex", flexDirection: "column", gap: "26px", maxWidth: "820px" }}
         >
-          <h1
-            style={{
-              margin: 0,
-              font: `700 clamp(40px, 7vw, 76px)/1.04 ${type.display}`,
-              letterSpacing: "-0.035em",
-              color: colors.text.primary,
-              textWrap: "balance",
-            }}
-          >
-            Financial Freedom Starts Here
-          </h1>
+          {/* The track is a flex row, so its height is the tallest slide's and
+              nothing below it jumps as slides change. No fixed height needed. */}
+          <div style={{ overflow: "hidden" }}>
+            <div
+              style={{
+                display: "flex",
+                width: `${SLIDES.length * 100}%`,
+                transform: `translateX(-${(slide * 100) / SLIDES.length}%)`,
+                transition: reduceMotion ? "none" : "transform 620ms cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              {SLIDES.map((s, i) => (
+                <div
+                  key={s.headline}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`${i + 1} of ${SLIDES.length}`}
+                  aria-hidden={i !== slide}
+                  style={{
+                    width: `${100 / SLIDES.length}%`,
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "22px",
+                    paddingRight: "24px",
+                    boxSizing: "border-box",
+                    opacity: i === slide ? 1 : 0,
+                    transition: reduceMotion ? "none" : "opacity 620ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  {i === 0 ? (
+                    <h1
+                      style={{
+                        margin: 0,
+                        font: `700 clamp(40px, 7vw, 76px)/1.04 ${type.display}`,
+                        letterSpacing: "-0.035em",
+                        color: colors.text.primary,
+                        textWrap: "balance",
+                      }}
+                    >
+                      {s.headline}
+                    </h1>
+                  ) : (
+                    <p
+                      aria-hidden="true"
+                      style={{
+                        margin: 0,
+                        font: `700 clamp(40px, 7vw, 76px)/1.04 ${type.display}`,
+                        letterSpacing: "-0.035em",
+                        color: colors.text.primary,
+                        textWrap: "balance",
+                      }}
+                    >
+                      {s.headline}
+                    </p>
+                  )}
+                  <p
+                    style={{
+                      margin: 0,
+                      maxWidth: "46ch",
+                      font: `400 clamp(17px, 2vw, 20px)/1.55 ${type.body}`,
+                      color: colors.text.secondary,
+                      textWrap: "pretty",
+                    }}
+                  >
+                    {s.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p
-            style={{
-              margin: 0,
-              maxWidth: "46ch",
-              font: `400 clamp(17px, 2vw, 20px)/1.55 ${type.body}`,
-              color: colors.text.secondary,
-              textWrap: "pretty",
-            }}
-          >
-            Access quick loans with competitive rates and flexible repayment options.
-          </p>
+          {/* Slide controls. Rules, not dots — they read as progress rather than
+              decoration, and give a 44px target without a 44px circle. */}
+          <div style={{ display: "flex", gap: "10px" }} role="tablist" aria-label="Choose a slide">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.headline}
+                type="button"
+                role="tab"
+                aria-selected={i === slide}
+                aria-label={s.headline}
+                onClick={() => setSlide(i)}
+                style={{
+                  width: "56px",
+                  height: "30px",
+                  padding: "13px 0",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  boxSizing: "content-box",
+                }}
+              >
+                <span
+                  style={{
+                    display: "block",
+                    height: "4px",
+                    borderRadius: "2px",
+                    background: i === slide ? brand.gold : colors.border.light,
+                    transition: reduceMotion ? "none" : "background 240ms ease",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
 
-          <div style={{ display: "flex", marginTop: "6px" }}>
+          <div style={{ display: "flex" }}>
             <PrimaryButton fullWidth={narrow} icon={ArrowRight} onClick={apply}>
               Start your application
             </PrimaryButton>
@@ -218,7 +330,7 @@ const Home: React.FC = () => {
               Checking your eligibility does not affect your credit score.
             </span>
           </div>
-        </motion.section>
+        </section>
 
         {/* -------------------------------------------------------- features */}
         <section
@@ -326,142 +438,6 @@ const Home: React.FC = () => {
               </li>
             ))}
           </ol>
-        </section>
-
-        {/* ------------------------------------------------------ what it costs */}
-        <section style={section}>
-          {eyebrow("What it costs")}
-          {heading("The whole cost, before you commit")}
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: narrow ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: narrow ? "20px" : "32px",
-              alignItems: "start",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              {[
-                { label: "Interest", value: `${monthlyRatePercent} per month`, note: "Charged on the amount you borrow." },
-                { label: "Processing fee", value: `${processingFeePercent} of the loan`, note: "One-off, included in the figures you are shown." },
-                { label: "Terms available", value: LOAN_DURATIONS.map((d) => d.value).join(", ") + " months", note: "You pick the term before you accept." },
-                { label: "Minimum loan", value: formatCurrency(MIN_LOAN_AMOUNT), note: "Your maximum is assessed from your account history." },
-              ].map((row) => (
-                <div
-                  key={row.label}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                    paddingBottom: "16px",
-                    borderBottom: `1px dashed ${colors.border.light}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                    }}
-                  >
-                    <span style={{ font: `400 15px/1.3 ${type.body}`, color: colors.text.secondary }}>
-                      {row.label}
-                    </span>
-                    <span
-                      style={{
-                        font: `700 18px/1.2 ${type.display}`,
-                        color: colors.text.primary,
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.value}
-                    </span>
-                  </div>
-                  <span style={{ font: `400 13px/1.45 ${type.body}`, color: colors.text.muted }}>
-                    {row.note}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ ...sheet, padding: narrow ? "24px 20px" : "30px 28px", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div
-                style={{
-                  font: `600 12px/1 ${type.body}`,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: colors.text.muted,
-                }}
-              >
-                For example
-              </div>
-              <p style={{ margin: 0, font: `400 15px/1.55 ${type.body}`, color: colors.text.secondary }}>
-                Borrow {formatCurrency(EXAMPLE_PRINCIPAL)} over {EXAMPLE_MONTHS} months and this is
-                the whole of it:
-              </p>
-
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {[
-                  ["Amount borrowed", example.principal],
-                  [`Interest (${monthlyRatePercent} × ${EXAMPLE_MONTHS} months)`, example.totalInterest],
-                  [`Processing fee (${processingFeePercent})`, example.processingFee],
-                  ["Monthly payment", example.monthlyPayment],
-                ].map(([label, value]) => (
-                  <div
-                    key={label as string}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: "16px",
-                      padding: "10px 0",
-                      borderBottom: `1px dashed ${colors.border.light}`,
-                    }}
-                  >
-                    <span style={{ font: `400 14px/1.3 ${type.body}`, color: colors.text.secondary }}>
-                      {label}
-                    </span>
-                    <span style={{ font: `600 15px/1 ${type.display}`, color: colors.text.primary }}>
-                      {formatCurrency(value as number)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "16px",
-                  padding: "16px 20px",
-                  borderRadius: `${radii.md}px`,
-                  background: colors.primary.main,
-                  borderBottom: `4px solid ${brand.gold}`,
-                }}
-              >
-                <span style={{ font: `600 14px/1 ${type.body}`, color: colors.background.main }}>
-                  Total repayment
-                </span>
-                <span
-                  style={{
-                    font: `700 24px/1 ${type.display}`,
-                    letterSpacing: "-0.02em",
-                    color: brand.gold,
-                  }}
-                >
-                  {formatCurrency(example.totalRepayment)}
-                </span>
-              </div>
-
-              <p style={{ margin: 0, font: `400 12px/1.5 ${type.body}`, color: colors.text.muted }}>
-                An illustration, not an offer. Your own figures are shown before you accept
-                anything.
-              </p>
-            </div>
-          </div>
         </section>
 
         {/* ------------------------------------------------ what you'll need */}
