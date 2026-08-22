@@ -188,3 +188,15 @@ code {
     animation: none;
   }
 }
+
+/* The landing page FAQ uses <details>. Safari keeps its own disclosure
+   triangle unless this is set, which would sit beside our own marker. */
+summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] > summary > span[aria-hidden='true'] {
+  background: #0b2621;
+  border-color: #0b2621;
+  color: #e6be58;
+}

@@ -20,28 +20,16 @@ import {
   Sheet,
   SheetTitle,
 } from "../components/chrome";
+import {
+  INTEREST_RATE_MONTHLY,
+  LOAN_DURATIONS,
+  MIN_LOAN_AMOUNT,
+  formatCurrency,
+  quote,
+} from "../lending";
 
 // ============== Loan Duration Options ==============
-const LOAN_DURATIONS = [
-  { value: 1, label: "1 Month" },
-  { value: 2, label: "2 Months" },
-  { value: 3, label: "3 Months" },
-  { value: 6, label: "6 Months" },
-  { value: 12, label: "12 Months" },
-];
-
 // ============== Format Currency ==============
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })
-    .format(amount)
-    .replace("NGN", "₦");
-};
-
 // ============== Main Component ==============
 const LoanApplication: React.FC = () => {
   const navigate = useNavigate();
@@ -57,7 +45,7 @@ const LoanApplication: React.FC = () => {
   const [showMonoWebview, setShowMonoWebview] = useState(false);
 
   // Interest rate (example: 5% per month)
-  const interestRate = 0.05;
+  const interestRate = INTEREST_RATE_MONTHLY;
 
   useEffect(() => {
     const maxEligible = localStorage.getItem("maxLoanEligible");
@@ -95,21 +83,10 @@ const LoanApplication: React.FC = () => {
     setMonoUrl("");
   }, [loanAmount, duration]);
 
-  const loanBreakdown = useMemo(() => {
-    const principal = loanAmount;
-    const totalInterest = principal * interestRate * duration;
-    const processingFee = principal * 0.01; // 1% processing fee
-    const totalRepayment = principal + totalInterest + processingFee;
-    const monthlyPayment = totalRepayment / duration;
-
-    return {
-      principal,
-      totalInterest,
-      processingFee,
-      totalRepayment,
-      monthlyPayment,
-    };
-  }, [loanAmount, duration]);
+  const loanBreakdown = useMemo(
+    () => quote(loanAmount, duration),
+    [loanAmount, duration]
+  );
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
@@ -119,8 +96,8 @@ const LoanApplication: React.FC = () => {
       setError(`Maximum loan amount is ${formatCurrency(maxLoanAmount)}`);
       setLoanAmount(maxLoanAmount);
       setInputValue(formatCurrency(maxLoanAmount));
-    } else if (numericValue < 5000 && numericValue !== 0) {
-      setError("Minimum loan amount is ₦5,000");
+    } else if (numericValue < MIN_LOAN_AMOUNT && numericValue !== 0) {
+      setError(`Minimum loan amount is ${formatCurrency(MIN_LOAN_AMOUNT)}`);
       setLoanAmount(numericValue);
       setInputValue(formatCurrency(numericValue));
     } else {
@@ -147,8 +124,8 @@ const LoanApplication: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (loanAmount < 5000) {
-      setError("Minimum loan amount is ₦5,000");
+    if (loanAmount < MIN_LOAN_AMOUNT) {
+      setError(`Minimum loan amount is ${formatCurrency(MIN_LOAN_AMOUNT)}`);
       return;
     }
 
@@ -204,8 +181,8 @@ const LoanApplication: React.FC = () => {
   };
 
   const sliderPct =
-    maxLoanAmount > 5000
-      ? ((loanAmount - 5000) / (maxLoanAmount - 5000)) * 100
+    maxLoanAmount > MIN_LOAN_AMOUNT
+      ? ((loanAmount - MIN_LOAN_AMOUNT) / (maxLoanAmount - MIN_LOAN_AMOUNT)) * 100
       : 0;
 
   return (
@@ -330,8 +307,8 @@ const LoanApplication: React.FC = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <input
                 type="range"
-                min={5000}
-                max={maxLoanAmount || 5000}
+                min={MIN_LOAN_AMOUNT}
+                max={maxLoanAmount || MIN_LOAN_AMOUNT}
                 step={1000}
                 value={loanAmount}
                 onChange={handleSliderChange}
@@ -349,7 +326,7 @@ const LoanApplication: React.FC = () => {
                   color: colors.text.secondary,
                 }}
               >
-                <span>{formatCurrency(5000)}</span>
+                <span>{formatCurrency(MIN_LOAN_AMOUNT)}</span>
                 <span>{formatCurrency(maxLoanAmount)}</span>
               </div>
             </div>
@@ -469,7 +446,7 @@ const LoanApplication: React.FC = () => {
                 <PrimaryButton
                   onClick={handleSubmit}
                   loading={isLoading}
-                  disabled={loanAmount < 5000 || !offerLetterAccepted}
+                  disabled={loanAmount < MIN_LOAN_AMOUNT || !offerLetterAccepted}
                   icon={ArrowRight}
                 >
                   {isLoading ? "Submitting" : "Accept and continue"}
