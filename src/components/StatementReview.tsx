@@ -65,7 +65,7 @@ const BankSelect: React.FC<{
         disabled={isLoading}
         open={isOpen}
         onClick={() => setIsOpen((v) => !v)}
-        hint="The account your salary is paid into."
+        hint="Your main bank account."
       />
 
       {isOpen && (
@@ -344,8 +344,8 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
       >
         <Sheet>
           <SheetTitle
-            title="Which account is your salary paid into?"
-            subtitle="Please provide your bank details for salary statement review."
+            title="Which account should we review?"
+            subtitle="Please provide your bank details for statement review."
           />
 
           <form
@@ -409,8 +409,8 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
             )}
 
             <Callout icon={Lock} title="Read-only access">
-              devpay reads six months of salary inflow to size your offer. The connection cannot
-              move money, and you can revoke it from your bank at any time.
+              devpay reads six months of account history to size your offer. The connection
+              cannot move money, and you can revoke it from your bank at any time.
             </Callout>
 
             <div style={{ marginTop: "auto" }}>
