@@ -628,14 +628,16 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
                   </strong>{" "}
                   obtaining information from relevant third parties as may be
                   necessary, on my <strong>employment details</strong>,{" "}
-                  <strong>salary payment history</strong>,{" "}
+                  <strong>bank account history</strong>,{" "}
                   <strong>loans</strong>, and{" "}
                   <strong>other related data</strong>, to make a decision on my
                   loan application.
                   <br />
-                  <br />I also consent to the loan amounts being{" "}
-                  <strong>deducted from my salary at source</strong> before
-                  credit to my account; and any outstanding loans being{" "}
+                  <br />I also consent to loan repayments being{" "}
+                  <strong>
+                    collected by direct debit from the bank account I authorise
+                  </strong>
+                  ; and any outstanding loans being{" "}
                   <strong>
                     recovered automatically from any BVN accounts linked to me
                   </strong>{" "}
