@@ -24,6 +24,7 @@ import {
   useUploadIDMutation,
 } from "../store/services/baseApi";
 import { colors, shadows } from "../theme";
+import Logo from "../assets/devpay-logo.png";
 
 const IDENTIFICATION_TYPES = [
   "International Passport",
@@ -535,7 +536,7 @@ const styles = {
   },
 
   logo: {
-    width: "160px",
+    width: "132px",
     height: "auto",
     marginBottom: "16px",
   },
@@ -1679,14 +1680,7 @@ const PersonalDetails: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           style={styles.header}
         >
-          <img
-            src="/logo.png"
-            alt="Logo"
-            style={styles.logo}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
+          <img src={Logo} alt="devpay" style={styles.logo} />
         </motion.div>
 
         <ProgressSteps currentStep={3} />

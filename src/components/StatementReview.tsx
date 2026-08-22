@@ -25,7 +25,7 @@ import {
   useVerifyResendBVNOtpMutation,
   useGetBanksQuery,
 } from "../store/services/baseApi";
-import Logo from "../assets/logo.jpeg";
+import Logo from "../assets/devpay-logo.png";
 import { colors, shadows } from "../theme";
 
 const getBackendErrorMessage = (err: unknown): string | undefined => {
@@ -733,8 +733,8 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
           >
             <img
               src={Logo}
-              alt="Logo"
-              style={{ height: "60px", objectFit: "contain" }}
+              alt="devpay"
+              style={{ width: "132px", height: "auto", display: "block" }}
             />
             <button
               onClick={onBack}

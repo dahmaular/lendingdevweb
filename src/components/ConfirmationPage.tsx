@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { colors, shadows } from "../theme";
+import Logo from "../assets/devpay-logo.png";
 
 // ============== Styles ==============
 const styles = {
@@ -39,7 +40,7 @@ const styles = {
   },
 
   logo: {
-    width: "160px",
+    width: "132px",
     height: "auto",
     marginBottom: "16px",
   },
@@ -552,14 +553,7 @@ const ConfirmationPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           style={styles.header}
         >
-          <img
-            src="/logo.png"
-            alt="Logo"
-            style={styles.logo}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
+          <img src={Logo} alt="devpay" style={styles.logo} />
         </motion.div>
 
         <ProgressSteps currentStep={5} />

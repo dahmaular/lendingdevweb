@@ -17,7 +17,7 @@ import {
   useUploadSignedOfferLetterMutation,
 } from "../store/services/baseApi";
 import { colors, shadows } from "../theme";
-import Logo from "../assets/logo.jpeg";
+import Logo from "../assets/devpay-logo.png";
 
 const styles = {
   container: {
@@ -285,8 +285,8 @@ const UploadOfferLetter: React.FC = () => {
         >
           <img
             src={Logo}
-            alt="Logo"
-            style={{ height: "60px", objectFit: "contain" }}
+            alt="devpay"
+            style={{ width: "132px", height: "auto", display: "block" }}
           />
         </motion.div>
 
