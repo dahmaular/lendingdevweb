@@ -1147,7 +1147,7 @@ const [lastName, setLastName] = useState<string>("");
             subtitle={
               showResumeForm
                 ? "Enter the email you applied with and we'll find your application."
-                : "Five short steps. We check your salary account, confirm who you are, and show you exactly what you'd repay before you commit to anything."
+                : "Five short steps. We check your bank account, confirm who you are, and show you exactly what you'd repay before you commit to anything."
             }
           />
 

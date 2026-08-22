@@ -413,7 +413,7 @@ const LoanApplication: React.FC = () => {
                 loanBreakdown.monthlyPayment
               )} a month for ${duration} month${duration > 1 ? "s" : ""}`}
             >
-              Debited from your salary account on payday. Total repayment is{" "}
+              Collected by direct debit from the account you connected. Total repayment is{" "}
               {formatCurrency(loanBreakdown.totalRepayment)} — that is{" "}
               {formatCurrency(
                 loanBreakdown.totalInterest + loanBreakdown.processingFee
