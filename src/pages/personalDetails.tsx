@@ -644,7 +644,10 @@ const styles = {
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
+    // flex-start, not space-between: each row is icon + label, and the
+    // selected tick pushes itself right with margin-left:auto
+    justifyContent: "flex-start",
+    textAlign: "left" as const,
     gap: "12px",
   } as React.CSSProperties,
 };
@@ -754,7 +757,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   key={employer}
                   style={{
                     ...styles.option,
-                    background: employer === value ? "#EEF6FF" : "transparent",
+                    background: employer === value ? "#FBF7EC" : "transparent",
                   }}
                   onClick={() => {
                     onChange(employer);
@@ -762,11 +765,11 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                     setSearch("");
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      employer === value ? "#EEF6FF" : "transparent";
+                      employer === value ? "#FBF7EC" : "transparent";
                   }}
                 >
                   <Building2 size={16} color={colors.text.muted} />
@@ -774,8 +777,8 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   {employer === value && (
                     <CheckCircle
                       size={16}
-                      color={colors.status.success}
-                      style={{ marginLeft: "auto" }}
+                      color={colors.secondary.main}
+                      style={{ marginLeft: "auto", flexShrink: 0 }}
                     />
                   )}
                 </div>
@@ -884,18 +887,18 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   key={idType}
                   style={{
                     ...styles.option,
-                    background: idType === value ? "#EEF6FF" : "transparent",
+                    background: idType === value ? "#FBF7EC" : "transparent",
                   }}
                   onClick={() => {
                     onChange(idType);
                     setIsOpen(false);
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      idType === value ? "#EEF6FF" : "transparent";
+                      idType === value ? "#FBF7EC" : "transparent";
                   }}
                 >
                   <CreditCard size={16} color={colors.text.muted} />
@@ -903,8 +906,8 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   {idType === value && (
                     <CheckCircle
                       size={16}
-                      color={colors.status.success}
-                      style={{ marginLeft: "auto" }}
+                      color={colors.secondary.main}
+                      style={{ marginLeft: "auto", flexShrink: 0 }}
                     />
                   )}
                 </div>
@@ -1105,7 +1108,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
                   }}
                   onClick={() => handleSelectSuggestion(suggestion)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
@@ -1144,7 +1147,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
                   color: colors.text.muted,
                   textAlign: "right",
                   borderTop: `1px solid ${colors.border.light}`,
-                  background: "#FAFAFA",
+                  background: colors.background.main,
                 }}
               >
                 Powered by Google
