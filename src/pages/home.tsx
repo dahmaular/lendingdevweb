@@ -95,12 +95,19 @@ const SURFACE = "#FFFFFF";
 const TINT = "#FFFFFF";
 
 /**
- * The landing page runs the full width of the window rather than sitting in a
- * centred column, so this is the only thing holding content off the edges. The
- * header, the body and the footer all take it, or the logo stops lining up with
- * the content under it.
+ * Container metrics, matched to fairmoney.io: a centred container capped at
+ * 1400px with a 32px gutter. Measured off their `.container` — the same bound
+ * their nav, hero and every section sit on.
+ *
+ * The effect is that on a laptop (~1440px) the page reads as near full width,
+ * with only a small gutter, while on an ultrawide display it stops growing
+ * rather than stretching lines of text across the whole screen.
+ *
+ * The header, the body and the footer must all use both values, or the logo
+ * stops lining up with the content beneath it.
  */
-const INSET = 40;
+const MAX_WIDTH = 1400;
+const INSET = 32;
 
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
@@ -257,12 +264,15 @@ const Home: React.FC = () => {
         action={{ label: "Apply now", onClick: apply }}
         background={GROUND}
         inset={INSET}
+        maxWidth={MAX_WIDTH}
       />
 
       <main
         style={{
           flexGrow: 1,
           width: "100%",
+          maxWidth: `${MAX_WIDTH}px`,
+          margin: "0 auto",
           padding: narrow ? "44px 20px 72px" : `76px ${INSET}px 104px`,
           display: "flex",
           flexDirection: "column",
@@ -732,12 +742,16 @@ const Home: React.FC = () => {
       <footer
         style={{
           borderTop: `1px solid ${colors.border.light}`,
-          padding: narrow ? "28px 20px 40px" : `34px ${INSET}px 48px`,
+          padding: narrow ? "28px 0 40px" : "34px 0 48px",
         }}
       >
         <div
           style={{
             width: "100%",
+            maxWidth: `${MAX_WIDTH}px`,
+            margin: "0 auto",
+            padding: narrow ? "0 20px" : `0 ${INSET}px`,
+            boxSizing: "border-box",
             display: "flex",
             flexWrap: "wrap",
             gap: "20px 40px",
