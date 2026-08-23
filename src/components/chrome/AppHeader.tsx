@@ -9,8 +9,6 @@ interface AppHeaderProps {
   action?: { label: string; onClick: () => void };
   /** Hidden on the narrowest screens, where the action matters more. */
   showHelp?: boolean;
-  /** Override the ground, so a page on a different background has no seam. */
-  background?: string;
   /** Horizontal inset, in px. Must match the page's own, or the logo will not
    *  line up with the content beneath it. */
   inset?: number;
@@ -22,7 +20,6 @@ interface AppHeaderProps {
 const AppHeader: React.FC<AppHeaderProps> = ({
   action,
   showHelp = true,
-  background = colors.background.main,
   inset = 48,
   maxWidth,
 }) => {
@@ -35,7 +32,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         justifyContent: "center",
         height: narrow ? "64px" : "78px",
         flexShrink: 0,
-        background,
+        background: colors.background.main,
         borderBottom: `1px solid ${colors.border.light}`,
       }}
     >

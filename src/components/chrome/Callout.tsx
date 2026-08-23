@@ -1,6 +1,6 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
-import { colors, radii, type } from "../../theme";
+import { brand, colors, radii, type } from "../../theme";
 
 interface CalloutProps {
   icon?: LucideIcon;
@@ -10,7 +10,7 @@ interface CalloutProps {
 }
 
 const tones = {
-  neutral: { bg: "#FBF7EC", border: colors.border.light, glyph: colors.secondary.main },
+  neutral: { bg: brand.wash, border: colors.border.light, glyph: colors.secondary.main },
   success: { bg: colors.status.successLight, border: "#C6DACC", glyph: colors.status.success },
   error: { bg: "#F8E9E6", border: "#E4C4BD", glyph: colors.status.error },
 };

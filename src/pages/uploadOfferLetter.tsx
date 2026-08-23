@@ -13,7 +13,7 @@ import {
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
 } from "../store/services/baseApi";
-import { colors, radii, shadows, type } from "../theme";
+import { brand, colors, radii, shadows, type } from "../theme";
 import {
   Dropzone,
   PageShell,
@@ -194,7 +194,7 @@ const UploadOfferLetter: React.FC = () => {
                   alignItems: "center",
                   gap: "13px",
                   padding: "14px 18px",
-                  background: "#FBF7EC",
+                  background: brand.wash,
                   border: `1px solid ${colors.border.light}`,
                   borderRadius: `${radii.lg - 2}px`,
                 }}

@@ -405,7 +405,7 @@ const LoanApplication: React.FC = () => {
                 alignItems: "flex-start",
                 gap: "14px",
                 padding: "18px 20px",
-                background: "#FBF7EC",
+                background: brand.wash,
                 border: `1px solid ${colors.border.light}`,
                 borderRadius: `${radii.lg - 2}px`,
                 cursor: "pointer",

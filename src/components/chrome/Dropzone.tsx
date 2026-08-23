@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Check, FileText, Upload, X } from "lucide-react";
-import { colors, radii, type } from "../../theme";
+import { brand, colors, radii, type } from "../../theme";
 import { SecondaryButton } from "./Buttons";
 
 interface DropzoneProps {
@@ -162,7 +162,7 @@ const Dropzone: React.FC<DropzoneProps> = ({
             textAlign: "left",
             border: `2px dashed ${borderColor}`,
             borderRadius: `${radii.lg - 2}px`,
-            background: over ? "#F6EFDC" : "#FBF7EC",
+            background: over ? colors.primary[100] : brand.wash,
             cursor: "pointer",
           }}
         >
@@ -223,7 +223,7 @@ const Dropzone: React.FC<DropzoneProps> = ({
           padding: "28px",
           border: `2px dashed ${borderColor}`,
           borderRadius: `${radii.lg + 2}px`,
-          background: over ? "#F6EFDC" : "#FBF7EC",
+          background: over ? colors.primary[100] : brand.wash,
           cursor: "pointer",
         }}
       >
