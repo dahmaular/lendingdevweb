@@ -61,6 +61,17 @@ describe("Home, with reduced motion requested", () => {
     });
   });
 
+  it("does not collapse the step rules", () => {
+    // The How it works rules draw with scaleX. If the reduced-motion branch
+    // ever attached those variants, every rule would sit at scaleX(0) and the
+    // section would render with no rules at all — invisible, not just static.
+    const { container } = renderHome();
+    container.querySelectorAll<HTMLElement>("span").forEach((el) => {
+      expect(el.style.transform ?? "").not.toMatch(/scale(X)?\(0\b/);
+      expect(el.style.opacity).not.toBe("0");
+    });
+  });
+
   it("still offers every slide's copy and its control", () => {
     renderHome();
     expect(screen.getByText(/Get approved in minutes/)).toBeInTheDocument();

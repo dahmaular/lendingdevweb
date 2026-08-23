@@ -27,8 +27,17 @@ import { createTheme } from '@mui/material/styles';
 
 /** The raw palette. Prefer the semantic exports below over reaching in here. */
 export const brand = {
-  paper: '#F6F2E8',     // the page ground
-  sheet: '#FFFDF8',     // the card the form sits on
+  paper: '#FFFFFF',     // the page ground
+  sheet: '#FFFFFF',     // the card the form sits on
+  /**
+   * The subtle fill: callouts, drop targets, disabled inputs, hover rows.
+   *
+   * On the original warm-paper ground this job was done by a cream (#FBF7EC),
+   * which worked because it sat between the ground and the card. On white it
+   * cannot be warm — a cream panel on white reads as a stain rather than a
+   * quiet surface — so it is a barely-there neutral instead.
+   */
+  wash: '#F6F5F2',
   rule: '#DFD5C0',      // borders and dividers
   ruleSoft: '#EBE3D2',  // the quieter divider, inside a sheet
   ink: '#0B2621',       // the logo plate — text, structure, primary action
@@ -49,9 +58,9 @@ export const colors = {
     // The Ledger has no gradients — this stays a flat fill so the many existing
     // `background: colors.primary.gradient` call sites resolve to solid ink.
     gradient: brand.ink,
-    // scale: light end is the paper/gold family (washes, rings, borders),
+    // scale: light end is the wash/gold family (fills, rings, borders),
     // dark end is the ink itself
-    50: '#FBF7EC',
+    50: '#F6F5F2',
     100: brand.goldWash,
     200: '#E6D6AE',
     300: '#CBBE9E',
@@ -66,7 +75,7 @@ export const colors = {
     main: brand.goldDeep,
     light: brand.gold,
     dark: '#8A6716',
-    50: '#FDF8EC',
+    50: '#FBF9F3',
     100: brand.goldWash,
     200: '#EBD9A6',
     300: '#E3C87E',
@@ -103,7 +112,7 @@ export const colors = {
     warning: '#A9691C',
   },
   neutral: {
-    50: brand.sheet,
+    50: brand.wash,
     100: brand.paper,
     200: brand.ruleSoft,
     300: brand.rule,

@@ -15,7 +15,7 @@ export interface ModalProps {
 }
 
 const glyphs = {
-  info: { Icon: Info, color: colors.primary.main, bg: "#FBF7EC" },
+  info: { Icon: Info, color: colors.primary.main, bg: brand.wash },
   success: { Icon: CheckCircle2, color: colors.status.success, bg: colors.status.successLight },
   error: { Icon: AlertCircle, color: colors.status.error, bg: "#F8E9E6" },
 };

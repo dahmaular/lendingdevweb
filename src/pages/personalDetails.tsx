@@ -17,7 +17,7 @@ import {
   useSavePersonalDetailsMutation,
   useUploadIDMutation,
 } from "../store/services/baseApi";
-import { colors, controls, radii, shadows, type } from "../theme";
+import { brand, colors, controls, radii, shadows, type } from "../theme";
 import {
   Callout,
   Dropzone,
@@ -757,7 +757,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   key={employer}
                   style={{
                     ...styles.option,
-                    background: employer === value ? "#FBF7EC" : "transparent",
+                    background: employer === value ? brand.wash : "transparent",
                   }}
                   onClick={() => {
                     onChange(employer);
@@ -769,7 +769,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      employer === value ? "#FBF7EC" : "transparent";
+                      employer === value ? brand.wash : "transparent";
                   }}
                 >
                   <Building2 size={16} color={colors.text.muted} />
@@ -887,7 +887,7 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   key={idType}
                   style={{
                     ...styles.option,
-                    background: idType === value ? "#FBF7EC" : "transparent",
+                    background: idType === value ? brand.wash : "transparent",
                   }}
                   onClick={() => {
                     onChange(idType);
@@ -898,7 +898,7 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      idType === value ? "#FBF7EC" : "transparent";
+                      idType === value ? brand.wash : "transparent";
                   }}
                 >
                   <CreditCard size={16} color={colors.text.muted} />

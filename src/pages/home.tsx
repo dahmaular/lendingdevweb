@@ -75,6 +75,23 @@ const SLIDES: { headline: string; body: string }[] = [
 
 const SLIDE_INTERVAL_MS = 6500;
 
+
+
+/**
+ * Container metrics, matched to fairmoney.io: a centred container capped at
+ * 1400px with a 32px gutter. Measured off their `.container` — the same bound
+ * their nav, hero and every section sit on.
+ *
+ * The effect is that on a laptop (~1440px) the page reads as near full width,
+ * with only a small gutter, while on an ultrawide display it stops growing
+ * rather than stretching lines of text across the whole screen.
+ *
+ * The header, the body and the footer must all use both values, or the logo
+ * stops lining up with the content beneath it.
+ */
+const MAX_WIDTH = 1400;
+const INSET = 32;
+
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
     q: "Can devpay take money out of my account?",
@@ -137,6 +154,48 @@ const bodyIn = {
     y: 0,
     transition: { delay, duration: 0.5, ease: EASE_OUT },
   }),
+};
+
+/**
+ * "How it works" orchestrates itself rather than borrowing the generic section
+ * reveal. The generic one fades the whole block in at once, which hides the
+ * very thing this section is about — the steps arriving in order.
+ *
+ * Each step lands, its badge pops, and its rule draws left to right, so the
+ * sequence reads as a line being laid down across the five steps.
+ */
+const stepSection = {
+  hidden: {},
+  shown: { transition: { staggerChildren: 0.14, delayChildren: 0.08 } },
+};
+
+const stepIntro = {
+  hidden: { opacity: 0, y: 16 },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } },
+};
+
+const stepItem = {
+  hidden: {},
+  shown: { transition: { staggerChildren: 0.08 } },
+};
+
+const stepText = {
+  hidden: { opacity: 0, y: 16 },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE_OUT } },
+};
+
+const stepBadge = {
+  hidden: { opacity: 0, scale: 0.6 },
+  shown: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.42, ease: [0.34, 1.4, 0.64, 1] as const },
+  },
+};
+
+const stepRule = {
+  hidden: { scaleX: 0 },
+  shown: { scaleX: 1, transition: { duration: 0.5, ease: EASE_OUT } },
 };
 
 const Home: React.FC = () => {
@@ -226,15 +285,19 @@ const Home: React.FC = () => {
         textAlign: "left",
       }}
     >
-      <AppHeader action={{ label: "Apply now", onClick: apply }} />
+      <AppHeader
+        action={{ label: "Apply now", onClick: apply }}
+        inset={INSET}
+        maxWidth={MAX_WIDTH}
+      />
 
       <main
         style={{
           flexGrow: 1,
           width: "100%",
-          maxWidth: "1120px",
+          maxWidth: `${MAX_WIDTH}px`,
           margin: "0 auto",
-          padding: narrow ? "44px 20px 72px" : "76px 48px 104px",
+          padding: narrow ? "44px 20px 72px" : `76px ${INSET}px 104px`,
           display: "flex",
           flexDirection: "column",
           gap: narrow ? "68px" : "104px",
@@ -466,9 +529,19 @@ const Home: React.FC = () => {
         </motion.section>
 
         {/* ---------------------------------------------------- how it works */}
-        <motion.section {...reveal} style={section}>
-          {eyebrow("How it works")}
-          {heading("Five steps, start to finish")}
+        <motion.section
+          style={section}
+          variants={reduceMotion ? undefined : stepSection}
+          initial={reduceMotion ? undefined : "hidden"}
+          whileInView={reduceMotion ? undefined : "shown"}
+          viewport={{ once: true, margin: "-90px" }}
+        >
+          <motion.div variants={reduceMotion ? undefined : stepIntro}>
+            {eyebrow("How it works")}
+          </motion.div>
+          <motion.div variants={reduceMotion ? undefined : stepIntro}>
+            {heading("Five steps, start to finish")}
+          </motion.div>
 
           <ol
             style={{
@@ -484,49 +557,60 @@ const Home: React.FC = () => {
             {STEPS.map((step, i) => (
               <motion.li
                 key={step.name}
-                initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.45, delay: i * 0.07, ease: EASE_OUT }}
+                variants={reduceMotion ? undefined : stepItem}
                 style={{ display: "flex", flexDirection: "column", gap: "12px" }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    paddingBottom: "14px",
-                    borderBottom: `2px solid ${i === 0 ? brand.gold : colors.border.light}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      flexShrink: 0,
-                      borderRadius: `${radii.sm + 2}px`,
-                      background: i === 0 ? brand.gold : "transparent",
-                      border: i === 0 ? "none" : `1.5px solid ${colors.border.light}`,
-                      color: i === 0 ? colors.primary.main : colors.text.muted,
-                      font: `700 14px/30px ${type.display}`,
-                      textAlign: "center",
-                    }}
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <motion.div
+                    variants={reduceMotion ? undefined : stepText}
+                    style={{ display: "flex", alignItems: "center", gap: "12px" }}
                   >
-                    {i + 1}
-                  </span>
-                  <span
+                    <motion.span
+                      variants={reduceMotion ? undefined : stepBadge}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        flexShrink: 0,
+                        borderRadius: `${radii.sm + 2}px`,
+                        background: i === 0 ? brand.gold : "transparent",
+                        border: i === 0 ? "none" : `1.5px solid ${colors.border.light}`,
+                        color: i === 0 ? colors.primary.main : colors.text.muted,
+                        font: `700 14px/30px ${type.display}`,
+                        textAlign: "center",
+                      }}
+                    >
+                      {i + 1}
+                    </motion.span>
+                    <span
+                      style={{
+                        font: `600 15px/1.2 ${type.display}`,
+                        letterSpacing: "-0.01em",
+                        color: colors.text.primary,
+                      }}
+                    >
+                      {step.name}
+                    </span>
+                  </motion.div>
+
+                  {/* Was a borderBottom; it is its own element so it can draw. */}
+                  <motion.span
+                    variants={reduceMotion ? undefined : stepRule}
                     style={{
-                      font: `600 15px/1.2 ${type.display}`,
-                      letterSpacing: "-0.01em",
-                      color: colors.text.primary,
+                      display: "block",
+                      height: "2px",
+                      borderRadius: "1px",
+                      background: i === 0 ? brand.gold : colors.border.light,
+                      transformOrigin: "left center",
                     }}
-                  >
-                    {step.name}
-                  </span>
+                  />
                 </div>
-                <p style={{ margin: 0, font: `400 14px/1.5 ${type.body}`, color: colors.text.secondary }}>
+
+                <motion.p
+                  variants={reduceMotion ? undefined : stepText}
+                  style={{ margin: 0, font: `400 14px/1.5 ${type.body}`, color: colors.text.secondary }}
+                >
                   {step.sub}
-                </p>
+                </motion.p>
               </motion.li>
             ))}
           </ol>
@@ -552,7 +636,7 @@ const Home: React.FC = () => {
                     height: "38px",
                     flexShrink: 0,
                     borderRadius: `${radii.sm + 2}px`,
-                    background: "#FBF7EC",
+                    background: brand.wash,
                     border: `1px solid ${colors.border.light}`,
                     display: "flex",
                     alignItems: "center",
@@ -703,14 +787,16 @@ const Home: React.FC = () => {
       <footer
         style={{
           borderTop: `1px solid ${colors.border.light}`,
-          padding: narrow ? "28px 20px 40px" : "34px 48px 48px",
+          padding: narrow ? "28px 0 40px" : "34px 0 48px",
         }}
       >
         <div
           style={{
             width: "100%",
-            maxWidth: "1120px",
+            maxWidth: `${MAX_WIDTH}px`,
             margin: "0 auto",
+            padding: narrow ? "0 20px" : `0 ${INSET}px`,
+            boxSizing: "border-box",
             display: "flex",
             flexWrap: "wrap",
             gap: "20px 40px",

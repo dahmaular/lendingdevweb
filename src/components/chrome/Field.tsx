@@ -1,6 +1,6 @@
 import React, { useId, useRef, useState } from "react";
 import { AlertCircle, ChevronDown, LucideIcon } from "lucide-react";
-import { colors, controls, radii, type } from "../../theme";
+import { brand, colors, controls, radii, type } from "../../theme";
 
 const labelRow = (
   id: string,
@@ -50,7 +50,7 @@ const shellStyle = (focused: boolean, error?: string, disabled?: boolean): React
   alignItems: "center",
   height: `${controls.fieldHeight}px`,
   padding: "0 18px",
-  background: disabled ? colors.background.main : "#FFFFFF",
+  background: disabled ? brand.wash : "#FFFFFF",
   border: error
     ? `2px solid ${colors.status.error}`
     : focused

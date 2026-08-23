@@ -16,7 +16,7 @@ import {
   useVerifyResendBVNOtpMutation,
   useGetBanksQuery,
 } from "../store/services/baseApi";
-import { colors, radii, shadows, type } from "../theme";
+import { brand, colors, radii, shadows, type } from "../theme";
 import {
   Callout,
   Field,
@@ -154,7 +154,7 @@ const BankSelect: React.FC<{
                         width: "100%",
                         padding: "13px 16px",
                         border: "none",
-                        background: isSelected ? "#FBF7EC" : "transparent",
+                        background: isSelected ? brand.wash : "transparent",
                         cursor: "pointer",
                         textAlign: "left",
                         font: `${isSelected ? 600 : 400} 15px/1.3 ${type.body}`,

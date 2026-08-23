@@ -9,25 +9,46 @@ interface AppHeaderProps {
   action?: { label: string; onClick: () => void };
   /** Hidden on the narrowest screens, where the action matters more. */
   showHelp?: boolean;
+  /** Horizontal inset, in px. Must match the page's own, or the logo will not
+   *  line up with the content beneath it. */
+  inset?: number;
+  /** Cap and centre the header row, for pages laid out as a fixed container
+   *  rather than full bleed. Omit to keep the row full width. */
+  maxWidth?: number;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ action, showHelp = true }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  action,
+  showHelp = true,
+  inset = 48,
+  maxWidth,
+}) => {
   const narrow = useIsNarrow();
 
   return (
     <header
       style={{
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "20px",
+        justifyContent: "center",
         height: narrow ? "64px" : "78px",
         flexShrink: 0,
-        padding: narrow ? "0 20px" : "0 48px",
         background: colors.background.main,
         borderBottom: `1px solid ${colors.border.light}`,
       }}
     >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: maxWidth ? `${maxWidth}px` : undefined,
+          margin: "0 auto",
+          padding: narrow ? "0 20px" : `0 ${inset}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "20px",
+          boxSizing: "border-box",
+        }}
+      >
       <img
         src={Logo}
         alt="devpay"
@@ -70,6 +91,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ action, showHelp = true }) => {
             {action.label}
           </button>
         )}
+        </div>
       </div>
     </header>
   );
