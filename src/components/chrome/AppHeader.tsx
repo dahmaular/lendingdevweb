@@ -11,12 +11,16 @@ interface AppHeaderProps {
   showHelp?: boolean;
   /** Override the ground, so a page on a different background has no seam. */
   background?: string;
+  /** Horizontal inset, in px. Must match the page's own, or the logo will not
+   *  line up with the content beneath it. */
+  inset?: number;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
   action,
   showHelp = true,
   background = colors.background.main,
+  inset = 48,
 }) => {
   const narrow = useIsNarrow();
 
@@ -29,7 +33,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         gap: "20px",
         height: narrow ? "64px" : "78px",
         flexShrink: 0,
-        padding: narrow ? "0 20px" : "0 48px",
+        padding: narrow ? "0 20px" : `0 ${inset}px`,
         background,
         borderBottom: `1px solid ${colors.border.light}`,
       }}

@@ -94,6 +94,14 @@ const GROUND = "#FFFFFF";
 const SURFACE = "#FFFFFF";
 const TINT = "#FFFFFF";
 
+/**
+ * The landing page runs the full width of the window rather than sitting in a
+ * centred column, so this is the only thing holding content off the edges. The
+ * header, the body and the footer all take it, or the logo stops lining up with
+ * the content under it.
+ */
+const INSET = 40;
+
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
     q: "Can devpay take money out of my account?",
@@ -245,15 +253,17 @@ const Home: React.FC = () => {
         textAlign: "left",
       }}
     >
-      <AppHeader action={{ label: "Apply now", onClick: apply }} background={GROUND} />
+      <AppHeader
+        action={{ label: "Apply now", onClick: apply }}
+        background={GROUND}
+        inset={INSET}
+      />
 
       <main
         style={{
           flexGrow: 1,
           width: "100%",
-          maxWidth: "1120px",
-          margin: "0 auto",
-          padding: narrow ? "44px 20px 72px" : "76px 48px 104px",
+          padding: narrow ? "44px 20px 72px" : `76px ${INSET}px 104px`,
           display: "flex",
           flexDirection: "column",
           gap: narrow ? "68px" : "104px",
@@ -722,14 +732,12 @@ const Home: React.FC = () => {
       <footer
         style={{
           borderTop: `1px solid ${colors.border.light}`,
-          padding: narrow ? "28px 20px 40px" : "34px 48px 48px",
+          padding: narrow ? "28px 20px 40px" : `34px ${INSET}px 48px`,
         }}
       >
         <div
           style={{
             width: "100%",
-            maxWidth: "1120px",
-            margin: "0 auto",
             display: "flex",
             flexWrap: "wrap",
             gap: "20px 40px",
