@@ -75,6 +75,25 @@ const SLIDES: { headline: string; body: string }[] = [
 
 const SLIDE_INTERVAL_MS = 6500;
 
+/**
+ * The landing page sits on white; the application screens behind it stay on the
+ * Ledger's warm paper (colors.background.main). A marketing page and a form are
+ * doing different jobs, and this is a deliberate split rather than a drift.
+ *
+ * These three move together, and that is the point. The Ledger's card surface
+ * (#FFFDF8) is a shade *warmer* than white: on paper it sits lighter than its
+ * surroundings and reads as lifted, but on a white ground the relationship
+ * inverts and the same card reads as a beige patch. So on white, surfaces are
+ * white too and their separation comes from the 1px rule and the hard ink
+ * offset — which was carrying most of it anyway.
+ *
+ * To put the page back on paper, set all three to colors.background.main,
+ * colors.background.card and "#FBF7EC" respectively.
+ */
+const GROUND = "#FFFFFF";
+const SURFACE = "#FFFFFF";
+const TINT = "#FFFFFF";
+
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
     q: "Can devpay take money out of my account?",
@@ -210,7 +229,7 @@ const Home: React.FC = () => {
   );
 
   const sheet: React.CSSProperties = {
-    background: colors.background.card,
+    background: SURFACE,
     border: `1px solid ${colors.border.light}`,
     borderRadius: `${radii.lg}px`,
     boxShadow: narrow ? "3px 3px 0 #0B2621" : shadows.xl,
@@ -220,13 +239,13 @@ const Home: React.FC = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: colors.background.main,
+        background: GROUND,
         display: "flex",
         flexDirection: "column",
         textAlign: "left",
       }}
     >
-      <AppHeader action={{ label: "Apply now", onClick: apply }} />
+      <AppHeader action={{ label: "Apply now", onClick: apply }} background={GROUND} />
 
       <main
         style={{
@@ -552,7 +571,7 @@ const Home: React.FC = () => {
                     height: "38px",
                     flexShrink: 0,
                     borderRadius: `${radii.sm + 2}px`,
-                    background: "#FBF7EC",
+                    background: TINT,
                     border: `1px solid ${colors.border.light}`,
                     display: "flex",
                     alignItems: "center",

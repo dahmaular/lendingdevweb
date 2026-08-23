@@ -9,9 +9,15 @@ interface AppHeaderProps {
   action?: { label: string; onClick: () => void };
   /** Hidden on the narrowest screens, where the action matters more. */
   showHelp?: boolean;
+  /** Override the ground, so a page on a different background has no seam. */
+  background?: string;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ action, showHelp = true }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  action,
+  showHelp = true,
+  background = colors.background.main,
+}) => {
   const narrow = useIsNarrow();
 
   return (
@@ -24,7 +30,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ action, showHelp = true }) => {
         height: narrow ? "64px" : "78px",
         flexShrink: 0,
         padding: narrow ? "0 20px" : "0 48px",
-        background: colors.background.main,
+        background,
         borderBottom: `1px solid ${colors.border.light}`,
       }}
     >
