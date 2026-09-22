@@ -1,13 +1,13 @@
 import React from "react";
-import { HelpCircle } from "lucide-react";
 import Logo from "../../assets/devpay-logo.png";
 import { brand, colors, controls, type } from "../../theme";
 import { useIsNarrow } from "./useMediaQuery";
+import { HelpLink } from "./HelpPanel";
 
 interface AppHeaderProps {
   /** Right-hand action. Omit for screens with nowhere to go, like the Mono return. */
   action?: { label: string; onClick: () => void };
-  /** Hidden on the narrowest screens, where the action matters more. */
+  /** Opens the help panel. Shrinks to an icon on phones rather than hiding. */
   showHelp?: boolean;
   /** Horizontal inset, in px. Must match the page's own, or the logo will not
    *  line up with the content beneath it. */
@@ -60,20 +60,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       </a>
 
       <div style={{ display: "flex", alignItems: "center", gap: narrow ? "16px" : "26px" }}>
-        {showHelp && !narrow && (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              font: `500 14px/1 ${type.body}`,
-              color: colors.text.secondary,
-            }}
-          >
-            <HelpCircle size={17} strokeWidth={1.6} />
-            Need help?
-          </span>
-        )}
+        {showHelp && <HelpLink variant={narrow ? "icon" : "header"} />}
 
         {action && (
           <button

@@ -15,6 +15,7 @@ export type { ReceiptRow } from "./Receipt";
 export { default as Callout } from "./Callout";
 export { default as Dropzone } from "./Dropzone";
 export { default as Modal } from "./Modal";
+export { default as HelpPanel, HelpLink } from "./HelpPanel";
 export type { ModalProps } from "./Modal";
 export { Field, SelectField, OtpInput, FieldRow } from "./Field";
 export type { FieldProps, SelectFieldProps, OtpInputProps } from "./Field";

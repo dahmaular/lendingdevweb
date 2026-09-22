@@ -826,7 +826,11 @@ const [lastName, setLastName] = useState<string>("");
   const [loadingState, setLoadingState] = useState<boolean>(false);
   const [loanId, setLoanId] = useState<string>("");
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
-  const [showResumeForm, setShowResumeForm] = useState<boolean>(false);
+  // /apply?resume=1 opens straight onto the resume form — the help panel and
+  // the footer link here.
+  const [showResumeForm, setShowResumeForm] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get("resume") === "1"
+  );
   const [resumeEmail, setResumeEmail] = useState<string>("");
   const [resumeStatus, setResumeStatus] = useState<CurrentStatusData | null>(
     null,

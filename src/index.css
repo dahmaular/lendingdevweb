@@ -191,6 +191,11 @@ code {
 
 /* The landing page FAQ uses <details>. Safari keeps its own disclosure
    triangle unless this is set, which would sit beside our own marker. */
+/* Help panel questions: the chevron turns as the answer opens. */
+.dv-faq-chevron { transition: transform 0.2s ease; }
+.dv-faq[open] .dv-faq-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .dv-faq-chevron { transition: none; } }
+
 summary::-webkit-details-marker {
   display: none;
 }

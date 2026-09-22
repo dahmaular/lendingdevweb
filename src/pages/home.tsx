@@ -14,9 +14,10 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { brand, colors, controls, radii, shadows, type } from "../theme";
-import { AppHeader, PrimaryButton, STEPS } from "../components/chrome";
+import { AppHeader, HelpLink, PrimaryButton, STEPS } from "../components/chrome";
 import { useIsNarrow, useMediaQuery } from "../components/chrome/useMediaQuery";
 import { MIN_LOAN_AMOUNT, formatCurrency } from "../lending";
+import { COMPANY, SUPPORT, isPlaceholder, telHref } from "../support";
 
 /**
  * The public landing page. The application flow lives at /apply.
@@ -74,6 +75,27 @@ const SLIDES: { headline: string; body: string }[] = [
 ];
 
 const SLIDE_INTERVAL_MS = 6500;
+
+const footerHeading: React.CSSProperties = {
+  font: `600 14px/1.3 ${type.body}`,
+  color: colors.text.primary,
+  marginBottom: "2px",
+};
+const footerText: React.CSSProperties = {
+  font: `400 13px/1.55 ${type.body}`,
+  color: colors.text.secondary,
+};
+const footerLink: React.CSSProperties = {
+  font: `400 14px/1.55 ${type.body}`,
+  color: colors.text.secondary,
+  textDecoration: "none",
+};
+const footerColumn: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "10px",
+};
 
 
 
@@ -530,7 +552,8 @@ const Home: React.FC = () => {
 
         {/* ---------------------------------------------------- how it works */}
         <motion.section
-          style={section}
+          id="how-it-works"
+          style={{ ...section, scrollMarginTop: "24px" }}
           variants={reduceMotion ? undefined : stepSection}
           initial={reduceMotion ? undefined : "hidden"}
           whileInView={reduceMotion ? undefined : "shown"}
@@ -787,7 +810,7 @@ const Home: React.FC = () => {
       <footer
         style={{
           borderTop: `1px solid ${colors.border.light}`,
-          padding: narrow ? "28px 0 40px" : "34px 0 48px",
+          padding: narrow ? "36px 0 40px" : "48px 0 44px",
         }}
       >
         <div
@@ -798,36 +821,76 @@ const Home: React.FC = () => {
             padding: narrow ? "0 20px" : `0 ${INSET}px`,
             boxSizing: "border-box",
             display: "flex",
-            flexWrap: "wrap",
-            gap: "20px 40px",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
+            flexDirection: "column",
+            gap: narrow ? "32px" : "40px",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "46ch" }}>
-            <span style={{ font: `600 14px/1.3 ${type.body}`, color: colors.text.primary }}>
-              Devtage Financial Services Limited
-            </span>
-            <span style={{ font: `400 13px/1.55 ${type.body}`, color: colors.text.secondary }}>
-              [PLACEHOLDER: registered address, RC number and lending licence details go here.]
-            </span>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: narrow ? "32px 40px" : "32px 72px",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
+            {/* who we are */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "44ch" }}>
+              <span style={{ font: `700 20px/1.2 ${type.display}`, letterSpacing: "-0.02em", color: colors.text.primary }}>
+                devpay
+              </span>
+              <span style={footerText}>devpay is a product of {COMPANY.name}.</span>
+              <span style={footerText}>
+                RC {COMPANY.rcNumber} · {COMPANY.licence}
+              </span>
+              <span style={footerText}>{COMPANY.address}</span>
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: narrow ? "32px 56px" : "32px 88px" }}>
+              <nav aria-label="Product" style={footerColumn}>
+                <span style={footerHeading}>Product</span>
+                <a href="/apply" style={footerLink}>Apply now</a>
+                <a href="#how-it-works" style={footerLink}>How it works</a>
+                <a href="/apply?resume=1" style={footerLink}>Resume application</a>
+              </nav>
+
+              <div style={footerColumn}>
+                <span style={footerHeading}>Help</span>
+                <HelpLink variant="footer" />
+                {isPlaceholder(SUPPORT.email) ? (
+                  <span style={footerText}>{SUPPORT.email}</span>
+                ) : (
+                  <a href={`mailto:${SUPPORT.email}`} style={footerLink}>{SUPPORT.email}</a>
+                )}
+                {isPlaceholder(SUPPORT.phone) ? (
+                  <span style={footerText}>{SUPPORT.phone}</span>
+                ) : (
+                  <a href={telHref(SUPPORT.phone)} style={footerLink}>{SUPPORT.phone}</a>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <span style={{ font: `600 14px/1.3 ${type.body}`, color: colors.text.primary }}>
-              Contact
-            </span>
-            <span style={{ font: `400 13px/1.55 ${type.body}`, color: colors.text.secondary }}>
-              [PLACEHOLDER: support email]
-              <br />
-              [PLACEHOLDER: support phone]
-            </span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <Check size={16} strokeWidth={2.2} color={colors.secondary.main} />
-            <span style={{ font: `400 13px/1.4 ${type.body}`, color: colors.text.secondary }}>
-              Your data is secured with bank-level encryption.
+          <div
+            style={{
+              borderTop: `1px solid ${brand.ruleSoft}`,
+              paddingTop: "22px",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px 32px",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 24px", alignItems: "center" }}>
+              <span style={footerText}>Loans are subject to approval.</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                <Check size={16} strokeWidth={2.2} color={colors.secondary.main} />
+                <span style={footerText}>Your data is secured with bank-level encryption.</span>
+              </span>
+            </div>
+            <span style={footerText}>
+              © {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
             </span>
           </div>
         </div>
