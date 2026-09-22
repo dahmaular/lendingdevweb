@@ -788,6 +788,15 @@ const formatDob = (value: string): string => {
   return `${d} / ${m} / ${y}`;
 };
 
+/**
+ * Get started field limits. Names are capped generously for compound names;
+ * 254 is the longest address email itself allows; Nigerian mobile numbers are
+ * 11 digits in local format (080…).
+ */
+const NAME_MAX_LENGTH = 50;
+const EMAIL_MAX_LENGTH = 254;
+const PHONE_DIGITS = 11;
+
 const toDateInputValue = (date: Date): string => {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
@@ -817,7 +826,11 @@ const [lastName, setLastName] = useState<string>("");
   const [loadingState, setLoadingState] = useState<boolean>(false);
   const [loanId, setLoanId] = useState<string>("");
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
-  const [showResumeForm, setShowResumeForm] = useState<boolean>(false);
+  // /apply?resume=1 opens straight onto the resume form — the help panel and
+  // the footer link here.
+  const [showResumeForm, setShowResumeForm] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get("resume") === "1"
+  );
   const [resumeEmail, setResumeEmail] = useState<string>("");
   const [resumeStatus, setResumeStatus] = useState<CurrentStatusData | null>(
     null,
@@ -973,12 +986,17 @@ const [lastName, setLastName] = useState<string>("");
       return;
     }
 
-    // Show consent modal if not yet accepted
-    if (!consentAccepted) {
-      setShowConsentModal(true);
+    if (phoneNumber.length !== PHONE_DIGITS) {
+      setModal({
+        open: true,
+        message: `Please enter your ${PHONE_DIGITS}-digit phone number, starting with 0.`,
+        title: "Invalid Phone Number",
+      });
       return;
     }
 
+    // Eligibility is checked before the consent modal, not after: asking
+    // someone to accept terms for a loan they cannot have is backwards.
     const [dobYear, dobMonth, dobDay] = dob.split("-").map(Number);
     const dobDate = new Date(dobYear, dobMonth - 1, dobDay);
     if (!dob || Number.isNaN(dobDate.getTime())) {
@@ -989,8 +1007,6 @@ const [lastName, setLastName] = useState<string>("");
       });
       return;
     }
-
-    setLoadingState(true);
 
     const today = new Date();
     const age = today.getFullYear() - dobDate.getFullYear();
@@ -1005,9 +1021,16 @@ const [lastName, setLastName] = useState<string>("");
         message: "You must be at least 18 years old to apply for a loan.",
         title: "Age Requirement",
       });
-      setLoadingState(false);
       return;
     }
+
+    // Show consent modal if not yet accepted
+    if (!consentAccepted) {
+      setShowConsentModal(true);
+      return;
+    }
+
+    setLoadingState(true);
 
     try {
       const response = await onboarding1({
@@ -1168,6 +1191,7 @@ const [lastName, setLastName] = useState<string>("");
                   value={resumeEmail}
                   onChange={setResumeEmail}
                   icon={Mail}
+                  maxLength={EMAIL_MAX_LENGTH}
                   hint="We'll look up the application filed under this address."
                 />
                 <div style={{ display: "flex", gap: "16px", marginTop: "auto" }}>
@@ -1201,6 +1225,7 @@ const [lastName, setLastName] = useState<string>("");
                     value={firstName}
                     onChange={setFirstName}
                     icon={User}
+                    maxLength={NAME_MAX_LENGTH}
                   />
                   <Field
                     label="Last name"
@@ -1209,6 +1234,7 @@ const [lastName, setLastName] = useState<string>("");
                     value={lastName}
                     onChange={setLastName}
                     icon={User}
+                    maxLength={NAME_MAX_LENGTH}
                   />
                 </FieldRow>
 
@@ -1222,6 +1248,7 @@ const [lastName, setLastName] = useState<string>("");
                     value={email}
                     onChange={setEmail}
                     icon={Mail}
+                    maxLength={EMAIL_MAX_LENGTH}
                     hint="We send your offer letter here."
                   />
                   <Field
@@ -1231,9 +1258,9 @@ const [lastName, setLastName] = useState<string>("");
                     autoComplete="tel"
                     placeholder="Enter your phone number"
                     value={phoneNumber}
-                    onChange={setPhoneNumber}
+                    onChange={(value) => setPhoneNumber(value.replace(/\D/g, ""))}
                     icon={Phone}
-                    maxLength={11}
+                    maxLength={PHONE_DIGITS}
                     hint="Used for one-time codes only."
                   />
                 </FieldRow>
@@ -1245,7 +1272,7 @@ const [lastName, setLastName] = useState<string>("");
                   onChange={setDob}
                   icon={Calendar}
                   hint="You must be 18 or older to apply."
-                  inputAttrs={{ max: toDateInputValue(new Date()), required: true }}
+                  inputAttrs={{ max: toDateInputValue(eighteenYearsAgo), required: true }}
                 />
 
                 {isOTP && (

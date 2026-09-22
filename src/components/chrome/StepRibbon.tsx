@@ -9,7 +9,7 @@ import { useIsNarrow } from "./useMediaQuery";
  * labels; it lives here now.
  */
 export const STEPS = [
-  { name: "Get started", sub: "Name, email, phone" },
+  { name: "Get started", sub: "Name, email address, phone number & date of birth" },
   { name: "Statement review", sub: "Bank account & BVN" },
   { name: "Personal details", sub: "Address & ID" },
   { name: "Loan application", sub: "Amount & tenor" },
