@@ -13,19 +13,26 @@ export const COMPANY = {
   name: "Devtage Financial Services Limited",
   rcNumber: "[RC number]",
   licence: "[Licence: regulator and licence number]",
-  address: "[Registered address]",
+  address: "Ademola Adetokunbo, Victoria Island, Lagos, Nigeria",
 };
 
 export const SUPPORT = {
-  email: "[support email]",
-  /** Nigerian local format, e.g. 0803 123 4567. Also used for WhatsApp. */
-  phone: "[phone number]",
+  email: "info@devtagefs.com",
+  /** Local (0803 123 4567) or international (+234 803 123 4567) format. */
+  phone: "+234 803 123 4567",
   hours: "[Hours, e.g. Monday–Friday, 9am–5pm WAT]",
 };
 
 /** True while a detail is still an unfilled [placeholder]. */
 export const isPlaceholder = (value: string): boolean => /^\[.*\]$/.test(value.trim());
 
-/** tel: href for a Nigerian local number, as +234 without the leading 0. */
-export const telHref = (phone: string): string =>
-  `tel:+234${phone.replace(/\D/g, "").replace(/^0/, "")}`;
+/**
+ * A Nigerian number as bare international digits (2348031234567), whether it
+ * was written locally (0803…) or internationally (+234 803…).
+ */
+const internationalDigits = (phone: string): string =>
+  `234${phone.replace(/\D/g, "").replace(/^234/, "").replace(/^0/, "")}`;
+
+export const telHref = (phone: string): string => `tel:+${internationalDigits(phone)}`;
+
+export const whatsappHref = (phone: string): string => `https://wa.me/${internationalDigits(phone)}`;

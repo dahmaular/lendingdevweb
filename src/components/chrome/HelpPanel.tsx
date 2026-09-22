@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Clock, HelpCircle, Mail, MessageCircle, Phone, X } from "lucide-react";
+import { ChevronDown, HelpCircle, Mail, Phone, X } from "lucide-react";
 import { brand, colors, radii, shadows, type } from "../../theme";
 import { SUPPORT, isPlaceholder, telHref } from "../../support";
 import { useIsNarrow, useMediaQuery } from "./useMediaQuery";
@@ -103,7 +103,6 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ open, onClose }) => {
     };
   }, [open, onClose]);
 
-  const whatsappHref = `https://wa.me/234${SUPPORT.phone.replace(/\D/g, "").replace(/^0/, "")}`;
   const slide = reduceMotion ? { opacity: 0 } : { x: "100%" };
 
   return (
@@ -229,8 +228,10 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ open, onClose }) => {
               </div>
               <ContactRow icon={Mail} label="Email" value={SUPPORT.email} href={`mailto:${SUPPORT.email}`} />
               <ContactRow icon={Phone} label="Call" value={SUPPORT.phone} href={telHref(SUPPORT.phone)} />
-              <ContactRow icon={MessageCircle} label="WhatsApp" value={SUPPORT.phone} href={whatsappHref} />
-              <ContactRow icon={Clock} label="Hours" value={SUPPORT.hours} />
+              {/* Hidden for now. To restore, uncomment and import MessageCircle and
+                  Clock from lucide-react and whatsappHref from ../../support. */}
+              {/* <ContactRow icon={MessageCircle} label="WhatsApp" value={SUPPORT.phone} href={whatsappHref(SUPPORT.phone)} /> */}
+              {/* <ContactRow icon={Clock} label="Hours" value={SUPPORT.hours} /> */}
             </div>
           </motion.aside>
         </motion.div>
