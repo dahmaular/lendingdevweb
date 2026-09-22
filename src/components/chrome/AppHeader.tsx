@@ -49,11 +49,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           boxSizing: "border-box",
         }}
       >
-      <img
-        src={Logo}
-        alt="devpay"
-        style={{ width: narrow ? "96px" : "118px", height: "auto", display: "block" }}
-      />
+      {/* A plain anchor rather than a router Link: the header stays free of the
+          router, and every screen it sits on already navigates by full load. */}
+      <a href="/" aria-label="devpay home" style={{ display: "block", lineHeight: 0 }}>
+        <img
+          src={Logo}
+          alt="devpay"
+          style={{ width: narrow ? "96px" : "118px", height: "auto", display: "block" }}
+        />
+      </a>
 
       <div style={{ display: "flex", alignItems: "center", gap: narrow ? "16px" : "26px" }}>
         {showHelp && !narrow && (
