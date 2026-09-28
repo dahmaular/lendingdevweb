@@ -1,15 +1,24 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, Lock } from "lucide-react";
+import { AlertCircle, Check, Lock } from "lucide-react";
 import { brand, colors, radii, shadows, type } from "../theme";
 
 // The message type the parent (loanApplication.tsx) listens for.
 export const MONO_COMPLETE_MESSAGE = "mono-mandate-complete";
 
 /**
+ * Mono appends `status=successful` or `status=failed` (with a `reason` such as
+ * `widget_closed`) to the redirect URL. Anything but "successful" — including
+ * a missing status — is treated as not authorised.
+ */
+export const isMandateSuccessful = (status: unknown): boolean =>
+  typeof status === "string" &&
+  status.replace(/^"|"$/g, "").toLowerCase() === "successful";
+
+/**
  * Landing page used as Mono's `redirect_url`. Mono navigates the mandate
- * webview here once the user finishes (or exits) the authorisation flow.
+ * webview here once the user finishes, cancels or fails the authorisation.
  *
  * When this runs INSIDE the Mono iframe it is same-origin with the host app,
  * so it notifies the parent window via postMessage. The parent then closes the
@@ -18,6 +27,9 @@ export const MONO_COMPLETE_MESSAGE = "mono-mandate-complete";
  */
 const MonoComplete: React.FC = () => {
   const navigate = useNavigate();
+  const succeeded = isMandateSuccessful(
+    new URLSearchParams(window.location.search).get("status"),
+  );
 
   useEffect(() => {
     // Forward whatever Mono appended to the redirect URL (status, reference…).
@@ -34,11 +46,15 @@ const MonoComplete: React.FC = () => {
         window.location.origin,
       );
     } else {
-      // Opened directly as a top-level page: continue the flow ourselves.
-      const t = setTimeout(() => navigate("/confirmation"), 1200);
+      // Opened directly as a top-level page: continue the flow ourselves —
+      // back to the loan screen if the mandate was not authorised.
+      const t = setTimeout(
+        () => navigate(succeeded ? "/confirmation" : "/loan-application"),
+        1200,
+      );
       return () => clearTimeout(t);
     }
-  }, [navigate]);
+  }, [navigate, succeeded]);
 
   return (
     <div
@@ -75,13 +91,21 @@ const MonoComplete: React.FC = () => {
             width: "76px",
             height: "76px",
             borderRadius: `${radii.lg + 6}px`,
-            background: brand.gold,
+            background: succeeded ? brand.gold : "#F8E9E6",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Check size={36} strokeWidth={2.6} color={colors.primary.main} />
+          {succeeded ? (
+            <Check size={36} strokeWidth={2.6} color={colors.primary.main} />
+          ) : (
+            <AlertCircle
+              size={36}
+              strokeWidth={2.2}
+              color={colors.status.error}
+            />
+          )}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -93,7 +117,9 @@ const MonoComplete: React.FC = () => {
               color: colors.text.primary,
             }}
           >
-            Authorization complete
+            {succeeded
+              ? "Authorization complete"
+              : "Authorization not completed"}
           </h1>
           <p
             style={{
@@ -102,8 +128,17 @@ const MonoComplete: React.FC = () => {
               color: colors.text.secondary,
             }}
           >
-            Finalising your application. We&rsquo;ll take you back to your file in a moment —
-            there&rsquo;s nothing you need to do here.
+            {succeeded ? (
+              <>
+                Finalising your application. We&rsquo;ll take you back to your
+                file in a moment — there&rsquo;s nothing you need to do here.
+              </>
+            ) : (
+              <>
+                The mandate wasn&rsquo;t set up. We&rsquo;ll take you back so
+                you can try again.
+              </>
+            )}
           </p>
         </div>
 
@@ -118,22 +153,27 @@ const MonoComplete: React.FC = () => {
             overflow: "hidden",
           }}
         >
-          <div className="dv-indeterminate" style={{ background: brand.gold }} />
+          <div
+            className="dv-indeterminate"
+            style={{ background: brand.gold }}
+          />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "9px",
-            color: colors.text.secondary,
-          }}
-        >
-          <Lock size={16} strokeWidth={1.7} color={colors.secondary.main} />
-          <span style={{ font: `400 13px/1.4 ${type.body}` }}>
-            Mandate authorised with your bank
-          </span>
-        </div>
+        {succeeded && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "9px",
+              color: colors.text.secondary,
+            }}
+          >
+            <Lock size={16} strokeWidth={1.7} color={colors.secondary.main} />
+            <span style={{ font: `400 13px/1.4 ${type.body}` }}>
+              Mandate authorised with your bank
+            </span>
+          </div>
+        )}
       </motion.div>
     </div>
   );

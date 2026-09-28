@@ -791,11 +791,24 @@ const formatDob = (value: string): string => {
 /**
  * Get started field limits. Names are capped generously for compound names;
  * 254 is the longest address email itself allows; Nigerian mobile numbers are
- * 11 digits in local format (080…).
+ * 11 digits in local format (080…) or +234 and 10 digits internationally —
+ * 15 characters also covers a stray 0 after the code (+2340803…).
  */
 const NAME_MAX_LENGTH = 50;
 const EMAIL_MAX_LENGTH = 254;
 const PHONE_DIGITS = 11;
+const PHONE_MAX_LENGTH = 15;
+
+/**
+ * A Nigerian mobile number in local 11-digit form (08031234567), whether it
+ * was typed locally or as +234…; null when it is neither.
+ */
+const toLocalPhone = (phone: string): string | null => {
+  const digits = phone.replace(/\D/g, "");
+  if (/^0\d{10}$/.test(digits)) return digits;
+  const national = digits.match(/^2340?(\d{10})$/);
+  return national ? `0${national[1]}` : null;
+};
 
 const toDateInputValue = (date: Date): string => {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -986,10 +999,11 @@ const [lastName, setLastName] = useState<string>("");
       return;
     }
 
-    if (phoneNumber.length !== PHONE_DIGITS) {
+    const localPhone = toLocalPhone(phoneNumber);
+    if (!localPhone) {
       setModal({
         open: true,
-        message: `Please enter your ${PHONE_DIGITS}-digit phone number, starting with 0.`,
+        message: `Please enter your ${PHONE_DIGITS}-digit phone number starting with 0, or your number starting with +234.`,
         title: "Invalid Phone Number",
       });
       return;
@@ -1037,7 +1051,7 @@ const [lastName, setLastName] = useState<string>("");
         email,
         firstName,
         lastName,
-        phoneNumber,
+        phoneNumber: localPhone,
         productId: PRODUCT_ID,
       }).unwrap();
 
@@ -1258,9 +1272,11 @@ const [lastName, setLastName] = useState<string>("");
                     autoComplete="tel"
                     placeholder="Enter your phone number"
                     value={phoneNumber}
-                    onChange={(value) => setPhoneNumber(value.replace(/\D/g, ""))}
+                    onChange={(value) =>
+                      setPhoneNumber(value.replace(/[^\d+]/g, "").replace(/(?!^)\+/g, ""))
+                    }
                     icon={Phone}
-                    maxLength={PHONE_DIGITS}
+                    maxLength={PHONE_MAX_LENGTH}
                     hint="Used for one-time codes only."
                   />
                 </FieldRow>
