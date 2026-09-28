@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useSubmitLoanMutation } from "../store/services/baseApi";
-import { MONO_COMPLETE_MESSAGE } from "./monoComplete";
+import { MONO_COMPLETE_MESSAGE, isMandateSuccessful } from "./monoComplete";
 import { brand, colors, radii, shadows, type } from "../theme";
 import {
   Callout,
@@ -60,8 +60,9 @@ const LoanApplication: React.FC = () => {
   }, [navigate]);
 
   // Listen for the Mono webview reaching our redirect page (`/mono/complete`).
-  // When the mandate flow finishes, that page posts a message from inside the
-  // iframe; we close the webview and continue to the confirmation screen.
+  // That page posts Mono's redirect params from inside the iframe; only a
+  // successful mandate continues to confirmation. A cancelled or failed one
+  // keeps the user here, the same as closing the webview.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Only trust messages from our own origin (the redirect page is same-origin).
@@ -69,7 +70,13 @@ const LoanApplication: React.FC = () => {
       if (event.data?.type !== MONO_COMPLETE_MESSAGE) return;
 
       setShowMonoWebview(false);
-      navigate("/confirmation");
+      if (isMandateSuccessful(event.data?.status)) {
+        navigate("/confirmation");
+      } else {
+        setError(
+          "Authorization was not completed. Please finish the mandate setup to submit your loan.",
+        );
+      }
     };
 
     window.addEventListener("message", handleMessage);
