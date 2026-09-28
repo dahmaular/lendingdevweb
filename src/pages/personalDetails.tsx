@@ -39,6 +39,21 @@ const IDENTIFICATION_TYPES = [
   "Voter's Card",
 ];
 
+/**
+ * Character limits per ID: passport A12345678 (9), NIN 11 digits, FRSC
+ * licence ABC12345AB12 (12), voter's card VIN (19).
+ */
+const ID_NUMBER_LENGTH: Record<string, { min: number; max: number; numeric?: boolean }> = {
+  "International Passport": { min: 9, max: 9 },
+  "National ID Card": { min: 11, max: 11, numeric: true },
+  "Driver's License": { min: 12, max: 12 },
+  "Voter's Card": { min: 19, max: 19 },
+};
+
+/** Only passports and driver's licences expire; the other IDs do not. */
+const requiresExpiryDate = (idType: string): boolean =>
+  idType === "International Passport" || idType === "Driver's License";
+
 // ============== Employers List ==============
 const EMPLOYERS_LIST = [
   "A.A. RANO NIG. LTD",
@@ -1191,13 +1206,10 @@ const PersonalDetails: React.FC = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      // Clear expiry date if switching to an ID type that doesn't require it
-      if (field === "identificationType") {
-        const requiresExpiry =
-          value === "International Passport" || value === "Driver's License";
-        if (!requiresExpiry) {
-          newData.expiryDate = "";
-        }
+      // A different ID means a different number and expiry — start both over.
+      if (field === "identificationType" && value !== prev.identificationType) {
+        newData.idNumber = "";
+        newData.expiryDate = "";
       }
       return newData;
     });
@@ -1217,9 +1229,8 @@ const PersonalDetails: React.FC = () => {
 
   const validateField = (field: string) => {
     let error = "";
-    const requiresExpiry =
-      formData.identificationType === "International Passport" ||
-      formData.identificationType === "Driver's License";
+    const requiresExpiry = requiresExpiryDate(formData.identificationType);
+    const idLength = ID_NUMBER_LENGTH[formData.identificationType];
 
     switch (field) {
       // case "employer":
@@ -1236,8 +1247,8 @@ const PersonalDetails: React.FC = () => {
         break;
       case "idNumber":
         if (!formData.idNumber) error = "Please enter your ID number";
-        else if (formData.idNumber.length < 5)
-          error = "ID number must be at least 5 characters";
+        else if (idLength && formData.idNumber.length < idLength.min)
+          error = `Your ${formData.identificationType} number must be ${idLength.min} characters`;
         break;
       case "expiryDate":
         if (requiresExpiry && !formData.expiryDate) {
@@ -1257,13 +1268,16 @@ const PersonalDetails: React.FC = () => {
   };
 
   const validateForm = () => {
-    const requiresExpiry =
-      formData.identificationType === "International Passport" ||
-      formData.identificationType === "Driver's License";
     const fields = ["addressLine", "identificationType", "idNumber"];
-    if (requiresExpiry) {
+    if (requiresExpiryDate(formData.identificationType)) {
       fields.push("expiryDate");
     }
+    // Errors only show on touched fields, so mark every one checked here —
+    // otherwise a missing value fails silently.
+    setTouched((prev) => ({
+      ...prev,
+      ...Object.fromEntries(fields.map((field) => [field, true])),
+    }));
     let isValid = true;
     fields.forEach((field) => {
       if (!validateField(field)) isValid = false;
@@ -1471,6 +1485,15 @@ const PersonalDetails: React.FC = () => {
   };
 
   const busy = isLoading || isUploading;
+  const idLength = ID_NUMBER_LENGTH[formData.identificationType];
+  const requiresExpiry = requiresExpiryDate(formData.identificationType);
+  const tomorrow = (() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
+  })();
 
   return (
     <PageShell
@@ -1543,19 +1566,36 @@ const PersonalDetails: React.FC = () => {
                   label="ID number"
                   placeholder={`Enter your ${formData.identificationType} number`}
                   value={formData.idNumber}
-                  onChange={(v) => handleInputChange("idNumber", v)}
+                  onChange={(v) => {
+                    const numeric = idLength?.numeric;
+                    const cleaned = numeric
+                      ? v.replace(/\D/g, "")
+                      : v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+                    handleInputChange(
+                      "idNumber",
+                      idLength ? cleaned.slice(0, idLength.max) : cleaned,
+                    );
+                  }}
                   icon={CreditCard}
+                  inputMode={idLength?.numeric ? "numeric" : "text"}
+                  maxLength={idLength?.max}
                   error={touched.idNumber ? errors.idNumber : undefined}
+                  hint={
+                    idLength ? `${idLength.max} characters, no spaces.` : undefined
+                  }
                 />
-                <Field
-                  label="Expiry date"
-                  inputType="date"
-                  value={formData.expiryDate}
-                  onChange={(v) => handleInputChange("expiryDate", v)}
-                  icon={Calendar}
-                  error={touched.expiryDate ? errors.expiryDate : undefined}
-                  hint="As printed on the document."
-                />
+                {requiresExpiry && (
+                  <Field
+                    label="Expiry date"
+                    inputType="date"
+                    value={formData.expiryDate}
+                    onChange={(v) => handleInputChange("expiryDate", v)}
+                    icon={Calendar}
+                    error={touched.expiryDate ? errors.expiryDate : undefined}
+                    hint="As printed on the document."
+                    inputAttrs={{ min: tomorrow, required: true }}
+                  />
+                )}
               </FieldRow>
             </motion.div>
           )}

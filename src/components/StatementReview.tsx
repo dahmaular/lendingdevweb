@@ -379,6 +379,14 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
                 inputMode="numeric"
                 maxLength={11}
                 why="Why we ask"
+                onWhy={() =>
+                  setModal({
+                    open: true,
+                    title: "Why we ask for your BVN",
+                    message:
+                      "Your BVN confirms your identity and that the bank account is in your name. It gives us read-only access to verify you",
+                  })
+                }
                 hint="Your BVN confirms your identity. It never lets us move money."
               />
             </FieldRow>
