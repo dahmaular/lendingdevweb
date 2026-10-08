@@ -32,6 +32,9 @@ export interface SavePersonalDetailsResponse {
   message: string;
   data: null | {
     maxLoanEligible?: number;
+    minLoanEligible?: number;
+    maxTenor?: number;
+    minTenor?: number;
     monoCustomerId?: string;
   };
 }
@@ -175,6 +178,18 @@ export const baseApi = createApi({
     resentBVNOtp: builder.mutation<VerifyOtpResponse, { bvn: string }>({
       query: (data) => ({
         url: "/Borrower/generate-bvn-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    // Resends the step 2 BVN code. Works only while the application is at
+    // currentStep 3 (code sent, not yet entered), and needs the same BVN.
+    resendStep2BvnOtp: builder.mutation<
+      { success: boolean; message: string },
+      { loanId: string; bvn: string }
+    >({
+      query: (data) => ({
+        url: "/Borrower/resend-step2-bvn-otp",
         method: "POST",
         body: data,
       }),
@@ -337,6 +352,7 @@ export const {
   useResentBVNOtpMutation,
   useVerifyResendBVNOtpMutation,
   useResendEmailOtpMutation,
+  useResendStep2BvnOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
   useRequestResumeOtpMutation,
