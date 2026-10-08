@@ -10,7 +10,7 @@ import {
   Lock,
 } from "lucide-react";
 import {
-  useResentBVNOtpMutation,
+  useResendStep2BvnOtpMutation,
   useSalaryReviewMutation,
   useSalaryReviewOTPMutation,
   useVerifyResendBVNOtpMutation,
@@ -204,8 +204,8 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
   const [salaryReview, { isLoading }] = useSalaryReviewMutation();
   const [salaryReviewOTP, { isLoading: verifyLoading }] =
     useSalaryReviewOTPMutation();
-  const [resentBVNOtp, { isLoading: resendLoading }] =
-    useResentBVNOtpMutation();
+  const [resendStep2BvnOtp, { isLoading: resendLoading }] =
+    useResendStep2BvnOtpMutation();
   const [, { isLoading: verifyResendLoading }] =
     useVerifyResendBVNOtpMutation();
 
@@ -288,7 +288,12 @@ export const StatementReview: React.FC<StatementReviewProps> = ({
 
   const handleResendOTP = async () => {
     try {
-      const response = await resentBVNOtp({ bvn }).unwrap();
+      // The backend keeps only a hash of the BVN, so the resend needs the
+      // number from the form again. It must match the BVN used in step 2.
+      const response = await resendStep2BvnOtp({
+        loanId: localStorage.getItem("loanId") || "",
+        bvn,
+      }).unwrap();
       if (response?.success) {
         setOtpVerified(false);
         setModal({

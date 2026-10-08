@@ -188,6 +188,9 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose }) => {
 const ConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(true);
+  // The summary comes from this browser's loan screen. A borrower who resumed
+  // on another device has none, so the figures are hidden rather than ₦0.
+  const [hasSummary, setHasSummary] = useState(false);
 
   // Loan data from localStorage
   const [loanData, setLoanData] = useState({
@@ -231,6 +234,7 @@ const ConfirmationPage: React.FC = () => {
           totalRepayment: loanDetails.totalRepayment || 0,
           monthlyPayment: loanDetails.monthlyPayment || 0,
         }));
+        setHasSummary(true);
       } catch (error) {
         console.error("Error parsing loan details:", error);
       }
@@ -305,8 +309,8 @@ const ConfirmationPage: React.FC = () => {
                   color: colors.text.secondary,
                 }}
               >
-                Your loan application has been submitted successfully. Here&rsquo;s a summary of
-                your application.
+                Your loan application has been submitted successfully.
+                {hasSummary && <> Here&rsquo;s a summary of your application.</>}
               </p>
             </div>
           </div>
@@ -328,61 +332,65 @@ const ConfirmationPage: React.FC = () => {
             {loanData.status} &middot; usually within 24 hours
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "0 40px",
-            }}
-          >
-            {summary.map(([label, value]) => (
+          {hasSummary && (
+            <>
               <div
-                key={label}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "16px",
-                  padding: "11px 0",
-                  borderBottom: `1px dashed ${colors.border.light}`,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                  gap: "0 40px",
                 }}
               >
-                <span style={{ font: `400 14px/1.3 ${type.body}`, color: colors.text.secondary }}>
-                  {label}
+                {summary.map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "16px",
+                      padding: "11px 0",
+                      borderBottom: `1px dashed ${colors.border.light}`,
+                    }}
+                  >
+                    <span style={{ font: `400 14px/1.3 ${type.body}`, color: colors.text.secondary }}>
+                      {label}
+                    </span>
+                    <span style={{ font: `600 15px/1 ${type.display}`, color: colors.text.primary }}>
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "16px",
+                  padding: "20px 24px",
+                  borderRadius: `${radii.lg - 2}px`,
+                  background: colors.primary.main,
+                  borderBottom: `4px solid ${brand.gold}`,
+                }}
+              >
+                <span style={{ font: `600 15px/1 ${type.body}`, color: colors.background.main }}>
+                  Total repayment
                 </span>
-                <span style={{ font: `600 15px/1 ${type.display}`, color: colors.text.primary }}>
-                  {value}
+                <span
+                  style={{
+                    font: `700 clamp(24px, 3vw, 32px)/1 ${type.display}`,
+                    letterSpacing: "-0.025em",
+                    color: brand.gold,
+                  }}
+                >
+                  {formatCurrency(loanData.totalRepayment)}
                 </span>
               </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "16px",
-              padding: "20px 24px",
-              borderRadius: `${radii.lg - 2}px`,
-              background: colors.primary.main,
-              borderBottom: `4px solid ${brand.gold}`,
-            }}
-          >
-            <span style={{ font: `600 15px/1 ${type.body}`, color: colors.background.main }}>
-              Total repayment
-            </span>
-            <span
-              style={{
-                font: `700 clamp(24px, 3vw, 32px)/1 ${type.display}`,
-                letterSpacing: "-0.025em",
-                color: brand.gold,
-              }}
-            >
-              {formatCurrency(loanData.totalRepayment)}
-            </span>
-          </div>
+            </>
+          )}
 
           <Callout icon={Clock} title="What happens next?">
             Your application will be reviewed within 24 hours. Once approved, the loan will be
