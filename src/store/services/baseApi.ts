@@ -69,8 +69,13 @@ export interface CurrentStatusData {
   emailVerifiedAt?: string;
   bvnVerifiedAt?: string;
   bankVerifiedAt?: string;
-  personalDetailsAt?: string;
+  documentsUploadedAt?: string;
   loanSubmittedAt?: string;
+  // Only sent once currentStep >= 5 (documents uploaded).
+  maxLoanEligible?: number;
+  minLoanEligible?: number;
+  maxTenor?: number;
+  minTenor?: number;
   stepNumber: number;
   totalSteps: number;
   progressPercentage: number;

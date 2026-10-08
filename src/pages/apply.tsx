@@ -23,6 +23,8 @@ import {
   CurrentStatusData,
 } from "../store/services/baseApi";
 import { colors, shadows, type } from "../theme";
+import { OnboardingStep } from "../types/loanApplication";
+import { SUPPORT } from "../support";
 import {
   Callout,
   Field,
@@ -155,6 +157,36 @@ const styles = {
 };
 
 // Resume Application Modal
+/**
+ * Where a resumed borrower goes for each `currentStep` (the last thing they
+ * finished). EmailSent stays on this page; MandateActivationPending is Remita
+ * only, and MandateActivated is done — neither has a screen to continue on.
+ */
+const RESUME_ROUTES: Partial<Record<OnboardingStep, string>> = {
+  [OnboardingStep.EmailValidated]: "/statement-review",
+  [OnboardingStep.BvnSent]: "/statement-review",
+  [OnboardingStep.BvnValidated]: "/personal-details",
+  [OnboardingStep.DocumentsUploaded]: "/loan-application",
+  // The loan was saved but the mandate call failed; step4 again is the only
+  // way forward, from the loan screen.
+  [OnboardingStep.LoanSubmitted]: "/loan-application",
+  [OnboardingStep.MandateGenerated]: "/loan-application",
+};
+
+/** Whether a resumed application has a screen to continue on. */
+const canContinue = (status: CurrentStatusData): boolean =>
+  !status.isCompleted &&
+  (status.currentStep === OnboardingStep.EmailSent ||
+    RESUME_ROUTES[status.currentStep as OnboardingStep] !== undefined);
+
+/** The loan screen's limits; current-step sends them from step 5 onwards. */
+const ELIGIBILITY_KEYS = [
+  "maxLoanEligible",
+  "minLoanEligible",
+  "maxTenor",
+  "minTenor",
+] as const;
+
 interface ResumeModalProps {
   open: boolean;
   statusData: CurrentStatusData | null;
@@ -171,6 +203,16 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
   onClose,
 }) => {
   if (!open || !statusData) return null;
+
+  const continuable = canContinue(statusData);
+  const retrying =
+    statusData.currentStep === OnboardingStep.LoanSubmitted ||
+    statusData.currentStep === OnboardingStep.MandateGenerated;
+  // The backend reports 100% before the borrower is done, so only
+  // isCompleted may show a full bar.
+  const progress = statusData.isCompleted
+    ? 100
+    : Math.min(statusData.progressPercentage, 99);
 
   return (
     <AnimatePresence>
@@ -255,7 +297,11 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 marginBottom: "8px",
               }}
             >
-              Welcome back, {statusData.firstName}! 👋
+              {continuable
+                ? `Welcome back, ${statusData.firstName}! 👋`
+                : statusData.isCompleted
+                ? "Your application is complete"
+                : "We need to help you finish this one"}
             </h3>
             <p
               style={{
@@ -265,9 +311,22 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 marginBottom: "24px",
               }}
             >
-              You have an ongoing application for{" "}
-              <strong>{statusData.productName}</strong>. Would you like to
-              continue where you left off?
+              {continuable ? (
+                <>
+                  You have an ongoing application for{" "}
+                  <strong>{statusData.productName}</strong>. Would you like to
+                  continue where you left off?
+                </>
+              ) : (
+                <>
+                  Your application for <strong>{statusData.productName}</strong>{" "}
+                  {statusData.isCompleted
+                    ? "has been submitted."
+                    : "can’t be continued here."}{" "}
+                  If you didn&rsquo;t finish authorising the direct debit with your bank,
+                  contact us at <strong>{SUPPORT.email}</strong>.
+                </>
+              )}
             </p>
 
             {/* Progress Info */}
@@ -304,7 +363,7 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                       color: colors.primary[600],
                     }}
                   >
-                    {statusData.progressPercentage.toFixed(0)}%
+                    {progress.toFixed(0)}%
                   </span>
                 </div>
                 <div
@@ -317,7 +376,7 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 >
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${statusData.progressPercentage}%` }}
+                    animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     style={{
                       height: "100%",
@@ -380,7 +439,37 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
               </div>
 
               {/* Next Step Preview */}
-              {statusData.nextStepName && (
+              {retrying ? (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    background: colors.primary[50],
+                    borderRadius: "12px",
+                    borderLeft: `3px solid ${colors.primary[500]}`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: colors.primary[700],
+                      margin: 0,
+                    }}
+                  >
+                    Next: Submit your loan again
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: colors.primary[600],
+                      margin: "4px 0 0",
+                    }}
+                  >
+                    Your last submission didn&rsquo;t go through. Review your loan and submit it again.
+                  </p>
+                </div>
+              ) : continuable && statusData.nextStepName && (
                 <div
                   style={{
                     marginTop: "12px",
@@ -417,16 +506,18 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              <button
-                onClick={onContinue}
-                style={{
-                  ...styles.button,
-                  width: "100%",
-                }}
-              >
-                Continue Application
-                <ArrowRight size={18} />
-              </button>
+              {continuable && (
+                <button
+                  onClick={onContinue}
+                  style={{
+                    ...styles.button,
+                    width: "100%",
+                  }}
+                >
+                  Continue Application
+                  <ArrowRight size={18} />
+                </button>
+              )}
               <button
                 onClick={onStartNew}
                 style={{
@@ -971,8 +1062,14 @@ const [lastName, setLastName] = useState<string>("");
         otp: resumeOtp,
       }).unwrap();
       if (response.success && response.data) {
-        setResumeStatus(response.data);
-        localStorage.setItem("loanId", response.data.loanId);
+        const status = response.data;
+        setResumeStatus(status);
+        localStorage.setItem("loanId", status.loanId);
+        ELIGIBILITY_KEYS.forEach((key) => {
+          const value = status[key];
+          if (value === undefined || value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, String(value));
+        });
         resetResumeCode();
         setShowResumeModal(true);
         setShowResumeForm(false);
@@ -1001,17 +1098,6 @@ const [lastName, setLastName] = useState<string>("");
     requestResumeCode(email);
   };
 
-  const navigateToStep = (stepNumber: number) => {
-    const stepRoutes: { [key: number]: string } = {
-      1: "/apply",
-      2: "/statement-review",
-      3: "/personal-details",
-      4: "/loan-application",
-      5: "/personal-details",
-      6: "/confirmation",
-    };
-    window.location.href = stepRoutes[stepNumber] || "/apply";
-  };
 
   const isAnyLoading =
     isLoading ||
@@ -1485,19 +1571,15 @@ const [lastName, setLastName] = useState<string>("");
         open={showResumeModal}
         statusData={resumeStatus}
         onContinue={() => {
-          if (resumeStatus) {
-            console.log("currentStep value:", resumeStatus.currentStep);
-            console.log("stepNumber value:", resumeStatus.stepNumber);
+          if (resumeStatus && canContinue(resumeStatus)) {
+            const step = resumeStatus.currentStep as OnboardingStep;
 
-            // Navigate to currentStep (the step user needs to complete)
-            const stepToNavigate = resumeStatus.currentStep;
-            console.log("Navigating to step:", stepToNavigate);
-
-            // Step 1 is this same page, so stay put, pre-fill the
-            // fields with the resumed application's data, and drop the
-            // user straight into the OTP screen so they can resend and
-            // verify instead of resubmitting the whole form.
-            if (stepToNavigate === 1) {
+            // The email code was sent but never verified. That screen is
+            // this page, so stay put, pre-fill the fields with the resumed
+            // application's data, and drop the user straight into the OTP
+            // screen so they can resend and verify instead of resubmitting
+            // the whole form.
+            if (step === OnboardingStep.EmailSent) {
               setEmail(resumeStatus.email || "");
               setFirstName(resumeStatus.firstName || "");
               setLastName(resumeStatus.lastName || "");
@@ -1509,17 +1591,7 @@ const [lastName, setLastName] = useState<string>("");
               return;
             }
 
-            // If navigating to step 4 (loan application), ensure maxLoanEligible is set
-            if (
-              stepToNavigate === 4 &&
-              !localStorage.getItem("maxLoanEligible")
-            ) {
-              // Set a default high value if not available from API
-              localStorage.setItem("maxLoanEligible", "1000000");
-              console.log("Set default maxLoanEligible for step 4");
-            }
-
-            navigateToStep(stepToNavigate);
+            window.location.href = RESUME_ROUTES[step] || "/apply";
           }
         }}
         onStartNew={() => {
