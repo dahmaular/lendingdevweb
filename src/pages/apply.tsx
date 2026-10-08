@@ -1,19 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Building2,
   User,
   Mail,
   Phone,
   Calendar,
-  KeyRound,
   ArrowRight,
-  RefreshCw,
-  Sparkles,
   Shield,
-  Clock,
-  ChevronDown,
-  Search,
   Check,
   X,
   Loader2,
@@ -26,11 +19,38 @@ import {
   useVerifyOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useRequestResumeOtpMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
-import { EMPLOYERS } from "./personalDetails";
-import Logo from "../assets/logo.jpeg";
-import { colors, shadows } from "../theme";
+import { colors, shadows, type } from "../theme";
+import {
+  Callout,
+  Field,
+  FieldRow,
+  Modal,
+  OtpInput,
+  PageShell,
+  PrimaryButton,
+  Receipt,
+  SecondaryButton,
+  Sheet,
+  SheetTitle,
+} from "../components/chrome";
+
+// The loan product this build onboards against. Staging and production have
+// different product records, so this is set per environment alongside
+// REACT_APP_API_BASE_URL — see .env.development / .env.production.
+//
+// Deliberately no fallback: a build with no product id must fail loudly rather
+// than quietly onboarding staging applicants onto the production product.
+const PRODUCT_ID = process.env.REACT_APP_PRODUCT_ID;
+
+if (!PRODUCT_ID) {
+  throw new Error(
+    "REACT_APP_PRODUCT_ID is not set. Set it in the deployment environment, " +
+      "or restore .env.development / .env.production."
+  );
+}
 
 // Styled Components using inline styles for Shopify-inspired design
 const styles = {
@@ -132,136 +152,6 @@ const styles = {
     justifyContent: "center",
     background: "rgba(255, 255, 255, 0.2)",
   } as React.CSSProperties,
-};
-
-interface ModalProps {
-  open: boolean;
-  title?: string;
-  message: string;
-  onClose: () => void;
-  onAction?: () => void;
-  actionText?: string;
-}
-
-const ModernModal: React.FC<ModalProps> = ({
-  open,
-  title,
-  message,
-  onClose,
-  onAction,
-  actionText = "Ok, got it",
-}) => {
-  if (!open) return null;
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: "24px",
-              padding: "32px",
-              maxWidth: "400px",
-              width: "100%",
-              boxShadow: shadows.xl,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Sparkles size={24} color={colors.primary[600]} />
-              </div>
-              <button
-                onClick={onClose}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <X size={20} color={colors.neutral[400]} />
-              </button>
-            </div>
-            {title && (
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: colors.neutral[900],
-                  marginBottom: "8px",
-                }}
-              >
-                {title}
-              </h3>
-            )}
-            <p
-              style={{
-                fontSize: "15px",
-                color: colors.neutral[600],
-                lineHeight: 1.6,
-                marginBottom: "24px",
-              }}
-            >
-              {message}
-            </p>
-            <button
-              onClick={onAction || onClose}
-              style={{
-                ...styles.button,
-                width: "100%",
-              }}
-            >
-              {actionText}
-              <ArrowRight size={18} />
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
 };
 
 // Resume Application Modal
@@ -740,14 +630,16 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
                   </strong>{" "}
                   obtaining information from relevant third parties as may be
                   necessary, on my <strong>employment details</strong>,{" "}
-                  <strong>salary payment history</strong>,{" "}
+                  <strong>bank account history</strong>,{" "}
                   <strong>loans</strong>, and{" "}
                   <strong>other related data</strong>, to make a decision on my
                   loan application.
                   <br />
-                  <br />I also consent to the loan amounts being{" "}
-                  <strong>deducted from my salary at source</strong> before
-                  credit to my account; and any outstanding loans being{" "}
+                  <br />I also consent to loan repayments being{" "}
+                  <strong>
+                    collected by direct debit from the bank account I authorise
+                  </strong>
+                  ; and any outstanding loans being{" "}
                   <strong>
                     recovered automatically from any BVN accounts linked to me
                   </strong>{" "}
@@ -889,376 +781,60 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ open, onAccept }) => {
     </AnimatePresence>
   );
 };
-
-// Progress Steps Component
-const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
-  const steps = [
-    { label: "Get Started", icon: User },
-    { label: "Statement Review", icon: Shield },
-    { label: "Personal Details", icon: Building2 },
-    { label: "Loan Application", icon: Sparkles },
-    { label: "Confirmation", icon: Check },
-  ];
-
-  return (
-    <div style={{ marginBottom: "32px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "24px",
-            right: "24px",
-            height: "3px",
-            background: colors.neutral[200],
-            borderRadius: "2px",
-            zIndex: 0,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "24px",
-            width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
-            maxWidth: "calc(100% - 48px)",
-            height: "3px",
-            background: `linear-gradient(90deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`,
-            borderRadius: "2px",
-            zIndex: 1,
-            transition: "width 0.5s ease",
-          }}
-        />
-
-        {steps.map((step, index) => {
-          const isCompleted = currentStep > index + 1;
-          const isCurrent = currentStep === index + 1;
-          const Icon = step.icon;
-
-          return (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                zIndex: 2,
-              }}
-            >
-              <motion.div
-                initial={false}
-                animate={{
-                  scale: isCurrent ? 1.1 : 1,
-                  background:
-                    isCompleted || isCurrent
-                      ? `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.secondary[500]} 100%)`
-                      : colors.neutral[100],
-                }}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border:
-                    isCompleted || isCurrent
-                      ? "none"
-                      : `2px solid ${colors.neutral[300]}`,
-                  boxShadow: isCurrent ? shadows.glow : "none",
-                }}
-              >
-                {isCompleted ? (
-                  <Check size={20} color="#fff" />
-                ) : (
-                  <Icon
-                    size={18}
-                    color={isCurrent ? "#fff" : colors.neutral[400]}
-                  />
-                )}
-              </motion.div>
-              <span
-                style={{
-                  marginTop: "8px",
-                  fontSize: "11px",
-                  fontWeight: isCurrent ? 600 : 500,
-                  color: isCurrent ? colors.primary[600] : colors.neutral[500],
-                  textAlign: "center",
-                  maxWidth: "70px",
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+// Formats a Date as the YYYY-MM-DD string a native date input expects,
+// using local calendar parts so the day never shifts across timezones.
+/** yyyy-mm-dd from the date input, rendered the way the receipt reads. */
+const formatDob = (value: string): string => {
+  const [y, m, d] = value.split("-");
+  if (!y || !m || !d) return value;
+  return `${d} / ${m} / ${y}`;
 };
 
-// Custom Select Component
-interface SelectOption {
-  id: string;
-  name: string;
-}
+/**
+ * Get started field limits. Names are capped generously for compound names;
+ * 254 is the longest address email itself allows; Nigerian mobile numbers are
+ * 11 digits in local format (080…) or +234 and 10 digits internationally —
+ * 15 characters also covers a stray 0 after the code (+2340803…).
+ */
+const NAME_MAX_LENGTH = 50;
+const EMAIL_MAX_LENGTH = 254;
+const PHONE_DIGITS = 11;
+const PHONE_MAX_LENGTH = 15;
 
-const ModernSelect: React.FC<{
-  options: SelectOption[];
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  label: string;
-}> = ({ options, value, onChange, placeholder, label }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredOptions = useMemo(() => {
-    if (!searchQuery) return options.slice(0, 100);
-    return options
-      .filter((opt) =>
-        opt.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .slice(0, 100);
-  }, [options, searchQuery]);
-
-  const selectedOption = options.find((opt) => opt.id === value);
-
-  return (
-    <div style={{ marginBottom: "20px", position: "relative" }}>
-      <label style={styles.label}>{label}</label>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          ...styles.input,
-          paddingLeft: "48px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: isOpen ? "#fff" : colors.neutral[50],
-          borderColor: isOpen ? colors.primary[500] : colors.neutral[200],
-          boxShadow: isOpen ? `0 0 0 4px ${colors.primary[100]}` : "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Building2
-            size={20}
-            color={colors.neutral[400]}
-            style={{ position: "absolute", left: "16px" }}
-          />
-          <span
-            style={{
-              color: selectedOption ? colors.neutral[900] : colors.neutral[400],
-            }}
-          >
-            {selectedOption?.name || placeholder}
-          </span>
-        </div>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
-          <ChevronDown size={20} color={colors.neutral[400]} />
-        </motion.div>
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              marginTop: "8px",
-              background: "#fff",
-              borderRadius: "16px",
-              boxShadow: shadows.xl,
-              border: `1px solid ${colors.neutral[200]}`,
-              zIndex: 100,
-              overflow: "hidden",
-              maxHeight: "320px",
-            }}
-          >
-            <div
-              style={{
-                padding: "12px",
-                borderBottom: `1px solid ${colors.neutral[100]}`,
-              }}
-            >
-              <div style={{ position: "relative" }}>
-                <Search
-                  size={18}
-                  color={colors.neutral[400]}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search employers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px 10px 40px",
-                    fontSize: "14px",
-                    border: `1px solid ${colors.neutral[200]}`,
-                    borderRadius: "8px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                  autoFocus
-                />
-              </div>
-            </div>
-            <div style={{ maxHeight: "240px", overflowY: "auto" }}>
-              {filteredOptions.length === 0 ? (
-                <div
-                  style={{
-                    padding: "16px",
-                    textAlign: "center",
-                    color: colors.neutral[500],
-                  }}
-                >
-                  No employers found
-                </div>
-              ) : (
-                filteredOptions.map((option) => (
-                  <div
-                    key={option.id}
-                    onClick={() => {
-                      onChange(option.id);
-                      setIsOpen(false);
-                      setSearchQuery("");
-                    }}
-                    style={{
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      background:
-                        value === option.id
-                          ? colors.primary[50]
-                          : "transparent",
-                      borderLeft:
-                        value === option.id
-                          ? `3px solid ${colors.primary[500]}`
-                          : "3px solid transparent",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (value !== option.id) {
-                        e.currentTarget.style.background = colors.neutral[50];
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (value !== option.id) {
-                        e.currentTarget.style.background = "transparent";
-                      }
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: colors.neutral[800],
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {option.name}
-                    </span>
-                    {value === option.id && (
-                      <Check size={16} color={colors.primary[500]} />
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 99 }}
-          onClick={() => {
-            setIsOpen(false);
-            setSearchQuery("");
-          }}
-        />
-      )}
-    </div>
-  );
+/**
+ * A Nigerian mobile number in local 11-digit form (08031234567), whether it
+ * was typed locally or as +234…; null when it is neither.
+ */
+const toLocalPhone = (phone: string): string | null => {
+  const digits = phone.replace(/\D/g, "");
+  if (/^0\d{10}$/.test(digits)) return digits;
+  const national = digits.match(/^2340?(\d{10})$/);
+  return national ? `0${national[1]}` : null;
 };
 
-// Input Component
-const ModernInput: React.FC<{
-  label: string;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  icon: React.ReactNode;
-  maxLength?: number;
-  required?: boolean;
-}> = ({
-  label,
-  type,
-  placeholder,
-  value,
-  onChange,
-  icon,
-  maxLength,
-  required,
-}) => {
-  const [focused, setFocused] = useState(false);
+/**
+ * Resume codes, per the backend's OtpService: a code lives 10 minutes, and
+ * requests are capped at 3 per email per 5 minutes — so roughly one every 100
+ * seconds.
+ */
+const RESUME_CODE_TTL_MS = 10 * 60 * 1000;
+const RESUME_RESEND_COOLDOWN_MS = 100 * 1000;
 
-  return (
-    <div style={{ marginBottom: "20px" }}>
-      <label style={styles.label}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <div
-          style={{
-            position: "absolute",
-            left: "16px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: focused ? colors.primary[500] : colors.neutral[400],
-            transition: "color 0.2s ease",
-          }}
-        >
-          {icon}
-        </div>
-        <input
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          maxLength={maxLength}
-          required={required}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            ...styles.input,
-            ...(focused ? styles.inputFocused : {}),
-          }}
-        />
-      </div>
-    </div>
-  );
+/** Messages after which the code can no longer be used: locked, expired, spent. */
+const DEAD_CODE_MESSAGE = /locked|too many failed|expired/i;
+
+const formatCountdown = (ms: number): string => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${`${total % 60}`.padStart(2, "0")}`;
+};
+
+const errorMessage = (error: unknown): string | undefined =>
+  (error as { data?: { message?: string } })?.data?.message;
+
+const toDateInputValue = (date: Date): string => {
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 };
 
 // Main Component
@@ -1274,10 +850,9 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
 
   const [email, setEmail] = useState<string>("");
-  const [dob, setDob] = useState<Date>(eighteenYearsAgo);
+  const [dob, setDob] = useState<string>(toDateInputValue(eighteenYearsAgo));
   const [firstName, setFirstName] = useState<string>("");
-  const [employer, setEmployer] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
+const [lastName, setLastName] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [isOTP, setIsOTP] = useState<boolean>(false);
@@ -1285,14 +860,24 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [loadingState, setLoadingState] = useState<boolean>(false);
   const [loanId, setLoanId] = useState<string>("");
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
-  const [showResumeForm, setShowResumeForm] = useState<boolean>(false);
+  // /apply?resume=1 opens straight onto the resume form — the help panel and
+  // the footer link here.
+  const [showResumeForm, setShowResumeForm] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get("resume") === "1"
+  );
   const [resumeEmail, setResumeEmail] = useState<string>("");
+  const [resumeOtp, setResumeOtp] = useState<string>("");
+  // When the latest resume code was requested; null until one has been.
+  const [resumeCodeSentAt, setResumeCodeSentAt] = useState<number | null>(null);
+  const [resumeError, setResumeError] = useState<string>("");
+  const [now, setNow] = useState<number>(() => Date.now());
   const [resumeStatus, setResumeStatus] = useState<CurrentStatusData | null>(
-    null
+    null,
   );
   const [showResumeModal, setShowResumeModal] = useState<boolean>(false);
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
   const [consentAccepted, setConsentAccepted] = useState<boolean>(false);
+  const [activeAppModal, setActiveAppModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -1304,39 +889,41 @@ const LoginPage: React.FC<LoginPageProps> = () => {
   const [verifyOtp, { isLoading: verifyLoading }] = useVerifyOtpMutation();
   const [resendEmailOtp, { isLoading: resendLoading, data: resendData }] =
     useResendEmailOtpMutation();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [verifyResendEmailOtp, { isLoading: verifyResendLoading }] =
+  const [, { isLoading: verifyResendLoading }] =
     useVerifyResendEmailOtpMutation();
   const [getCurrentStatus, { isLoading: statusLoading }] =
     useGetCurrentStatusMutation();
+  const [requestResumeOtp, { isLoading: resumeOtpLoading }] =
+    useRequestResumeOtpMutation();
 
-  // Check for existing application on mount
-  // useEffect(() => {
-  //   const checkExistingApplication = async (storedLoanId: string) => {
-  //     try {
-  //       const response = await getCurrentStatus({
-  //         email: storedLoanId,
-  //       }).unwrap();
-  //       if (response.success && response.data && !response.data.isCompleted) {
-  //         setResumeStatus(response.data);
-  //         setShowResumeModal(true);
-  //       }
-  //     } catch (error) {
-  //       // No existing application found or error, continue with fresh start
-  //       console.log("No existing application to resume");
-  //     }
-  //   };
+  // Tick once a second while a resume code is out, for its countdown and the
+  // resend cooldown.
+  useEffect(() => {
+    if (resumeCodeSentAt === null) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [resumeCodeSentAt]);
 
-  //   const storedLoanId = localStorage.getItem("loanId");
-  //   if (storedLoanId) {
-  //     checkExistingApplication(storedLoanId);
-  //   }
-  // }, [getCurrentStatus]);
+  const resumeCodeSent = resumeCodeSentAt !== null;
+  const resumeCodeLeft = resumeCodeSent
+    ? resumeCodeSentAt + RESUME_CODE_TTL_MS - now
+    : 0;
+  const resendWait = resumeCodeSent
+    ? resumeCodeSentAt + RESUME_RESEND_COOLDOWN_MS - now
+    : 0;
 
-  const handleResumeApplication = async () => {
+  const resetResumeCode = () => {
+    setResumeCodeSentAt(null);
+    setResumeOtp("");
+    setResumeError("");
+  };
+
+  // Resume step 1. The reply is the same whether or not an application
+  // exists, so the screen never says which.
+  const requestResumeCode = async (targetEmail: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!resumeEmail) {
+    if (!targetEmail) {
       setModal({
         open: true,
         message: "Please enter your email address to resume your application.",
@@ -1345,7 +932,7 @@ const LoginPage: React.FC<LoginPageProps> = () => {
       return;
     }
 
-    if (!emailRegex.test(resumeEmail)) {
+    if (!emailRegex.test(targetEmail)) {
       setModal({
         open: true,
         message: "Please enter a valid email address.",
@@ -1354,45 +941,76 @@ const LoginPage: React.FC<LoginPageProps> = () => {
       return;
     }
 
+    setResumeError("");
     try {
-      const response = await getCurrentStatus({ email: resumeEmail }).unwrap();
-      console.log("Resume application response:", response);
+      await requestResumeOtp({ email: targetEmail }).unwrap();
+      setResumeOtp("");
+      setResumeCodeSentAt(Date.now());
+      setNow(Date.now());
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      setResumeError(
+        status === 400
+          ? "Enter a valid email address."
+          : errorMessage(error) || "Something went wrong. Please try again.",
+      );
+    }
+  };
+
+  // Resume step 2: the code unlocks the application's current step.
+  const handleResumeApplication = async () => {
+    if (resumeOtp.length !== 6) {
+      setResumeError("Enter the 6-digit code from your email.");
+      return;
+    }
+
+    setResumeError("");
+    try {
+      const response = await getCurrentStatus({
+        email: resumeEmail,
+        otp: resumeOtp,
+      }).unwrap();
       if (response.success && response.data) {
-        console.log("Current step:", response.data.currentStep);
-        console.log("Step number:", response.data.stepNumber);
         setResumeStatus(response.data);
         localStorage.setItem("loanId", response.data.loanId);
+        resetResumeCode();
         setShowResumeModal(true);
         setShowResumeForm(false);
       } else {
-        setModal({
-          open: true,
-          message:
-            "No application found with this email. Please start a new application.",
-          title: "Application Not Found",
-        });
+        setResumeError(
+          response.message || "Something went wrong. Please try again.",
+        );
       }
     } catch (error) {
-      console.log("Error fetching application status:", error);
-      setModal({
-        open: true,
-        message:
-          "Unable to find your application. Please try again or start a new application.",
-        title: "Error",
-      });
+      const message =
+        errorMessage(error) || "Something went wrong. Please try again.";
+      setResumeError(message);
+      // A locked, expired or spent code can't be retried — clear it so the
+      // next step is plainly "Resend code".
+      if (DEAD_CODE_MESSAGE.test(message)) setResumeOtp("");
     }
+  };
+
+  // Starting over with an email that already has an application: send a
+  // resume code to that email instead of looking the application up directly.
+  const handleProceedWithActiveApp = () => {
+    setActiveAppModal({ open: false, message: "" });
+    setResumeEmail(email);
+    resetResumeCode();
+    setShowResumeForm(true);
+    requestResumeCode(email);
   };
 
   const navigateToStep = (stepNumber: number) => {
     const stepRoutes: { [key: number]: string } = {
-      1: "/",
+      1: "/apply",
       2: "/statement-review",
       3: "/personal-details",
       4: "/loan-application",
-      5: "/confirmation",
+      5: "/personal-details",
       6: "/confirmation",
     };
-    window.location.href = stepRoutes[stepNumber] || "/";
+    window.location.href = stepRoutes[stepNumber] || "/apply";
   };
 
   const isAnyLoading =
@@ -1415,18 +1033,33 @@ const LoginPage: React.FC<LoginPageProps> = () => {
       return;
     }
 
-    // Show consent modal if not yet accepted
-    if (!consentAccepted) {
-      setShowConsentModal(true);
+    const localPhone = toLocalPhone(phoneNumber);
+    if (!localPhone) {
+      setModal({
+        open: true,
+        message: `Please enter your ${PHONE_DIGITS}-digit phone number starting with 0, or your number starting with +234.`,
+        title: "Invalid Phone Number",
+      });
       return;
     }
 
-    setLoadingState(true);
+    // Eligibility is checked before the consent modal, not after: asking
+    // someone to accept terms for a loan they cannot have is backwards.
+    const [dobYear, dobMonth, dobDay] = dob.split("-").map(Number);
+    const dobDate = new Date(dobYear, dobMonth - 1, dobDay);
+    if (!dob || Number.isNaN(dobDate.getTime())) {
+      setModal({
+        open: true,
+        message: "Please enter a valid date of birth.",
+        title: "Invalid Date of Birth",
+      });
+      return;
+    }
 
     const today = new Date();
-    const age = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    const dayDiff = today.getDate() - dob.getDate();
+    const age = today.getFullYear() - dobDate.getFullYear();
+    const monthDiff = today.getMonth() - dobDate.getMonth();
+    const dayDiff = today.getDate() - dobDate.getDate();
     const actualAge =
       monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
 
@@ -1436,18 +1069,24 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         message: "You must be at least 18 years old to apply for a loan.",
         title: "Age Requirement",
       });
-      setLoadingState(false);
       return;
     }
+
+    // Show consent modal if not yet accepted
+    if (!consentAccepted) {
+      setShowConsentModal(true);
+      return;
+    }
+
+    setLoadingState(true);
 
     try {
       const response = await onboarding1({
         email,
-        employer,
         firstName,
         lastName,
-        phoneNumber,
-        productId: "372e9a1d-c714-4fc2-b44a-3eeb8ebda4c1",
+        phoneNumber: localPhone,
+        productId: PRODUCT_ID,
       }).unwrap();
 
       if (response.success) {
@@ -1463,16 +1102,22 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         setLoadingState(false);
         setIsOTP(true);
       }
-    } catch (error) {
-      console.error("Error during onboarding:", error);
-      setResendOTP(true);
-      setOtp("");
-      setModal({
-        open: true,
-        message: "An error occurred during onboarding. Please try again.",
-        title: "Onboarding Error",
-      });
+    } catch (error: unknown) {
+      
       setLoadingState(false);
+      const errData = (error as { data?: { message?: string } })?.data;
+      const errMsg = errData?.message ?? "";
+      if (errMsg.toLowerCase().includes("active application")) {
+        setActiveAppModal({ open: true, message: errMsg });
+      } else {
+        setResendOTP(true);
+        setOtp("");
+        setModal({
+          open: true,
+          message: errMsg || "An error occurred during onboarding. Please try again.",
+          title: "Onboarding Error",
+        });
+      }
     }
   };
 
@@ -1546,601 +1191,264 @@ const LoginPage: React.FC<LoginPageProps> = () => {
       });
     }
   };
-
-  const features = [
-    {
-      icon: Sparkles,
-      title: "Quick Approval",
-      description: "Get approved in minutes",
-    },
-    {
-      icon: Shield,
-      title: "Secure Process",
-      description: "Bank-level encryption",
-    },
-    {
-      icon: Clock,
-      title: "Fast Disbursement",
-      description: "Funds in 24 hours",
-    },
-  ];
+  const applicantName = `${firstName} ${lastName}`.trim();
 
   return (
-    <div style={styles.container}>
-      {/* Left Panel - Hero Section */}
-      <div
-        style={{ ...styles.leftPanel, display: "none" }}
-        className="left-panel-desktop"
+    <>
+      <PageShell
+        step={1}
+        headerAction={
+          showResumeForm
+            ? undefined
+            : { label: "Resume application", onClick: () => setShowResumeForm(true) }
+        }
+        aside={
+          <Receipt
+            rows={[
+              { label: "Applicant", value: applicantName || undefined },
+              { label: "Email", value: email || undefined },
+              { label: "Phone", value: phoneNumber || undefined },
+              { label: "Date of birth", value: dob ? formatDob(dob) : undefined },
+            ]}
+            footer="Everything you enter is encrypted and only read by the team underwriting this application."
+          />
+        }
       >
-        <div
-          style={{
-            position: "absolute",
-            top: "-100px",
-            right: "-100px",
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.05)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-150px",
-            left: "-150px",
-            width: "500px",
-            height: "500px",
-            borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.03)",
-          }}
-        />
+        <Sheet>
+          <SheetTitle
+            title={showResumeForm ? "Pick up where you left off" : "Let's get you started"}
+            subtitle={
+              showResumeForm
+                ? resumeCodeSent
+                  ? "Enter the code we emailed you to continue your application."
+                  : "Enter the email you applied with and we'll send you a code to continue."
+                : "Five short steps. We check your bank account, confirm who you are, and show you exactly what you'd repay before you commit to anything."
+            }
+          />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{ maxWidth: "400px", textAlign: "center", zIndex: 1 }}
-        >
-          <h1
-            style={{
-              fontSize: "48px",
-              fontWeight: 800,
-              color: "#fff",
-              marginBottom: "16px",
-              lineHeight: 1.2,
-            }}
+          <form
+            onSubmit={
+              showResumeForm
+                ? (e) => {
+                    e.preventDefault();
+                    if (resumeCodeSent) handleResumeApplication();
+                    else requestResumeCode(resumeEmail);
+                  }
+                : isOTP
+                ? handleOTPSubmit
+                : handleSubmit
+            }
+            style={{ display: "flex", flexDirection: "column", gap: "22px", flexGrow: 1 }}
           >
-            Financial Freedom Starts Here
-          </h1>
-          <p
-            style={{
-              fontSize: "18px",
-              color: "rgba(255, 255, 255, 0.8)",
-              marginBottom: "48px",
-              lineHeight: 1.6,
-            }}
-          >
-            Access quick loans with competitive rates and flexible repayment
-            options.
-          </p>
+            {showResumeForm ? (
+              <>
+                <Field
+                  label="Email address"
+                  inputType="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="Enter your registered email"
+                  value={resumeEmail}
+                  onChange={setResumeEmail}
+                  icon={Mail}
+                  maxLength={EMAIL_MAX_LENGTH}
+                  disabled={resumeCodeSent}
+                  hint={
+                    resumeCodeSent
+                      ? "To use a different email, go back."
+                      : "We'll email a code to this address."
+                  }
+                  error={resumeCodeSent ? undefined : resumeError || undefined}
+                />
 
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-              style={styles.featureCard}
-            >
-              <div style={styles.iconWrapper}>
-                <feature.icon size={24} color="#fff" />
-              </div>
-              <div style={{ textAlign: "left" }}>
-                <h3
-                  style={{
-                    color: "#fff",
-                    fontWeight: 600,
-                    fontSize: "16px",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {feature.title}
-                </h3>
-                <p
-                  style={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    fontSize: "14px",
-                  }}
-                >
-                  {feature.description}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-
-      {/* Right Panel - Form Section */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "24px",
-          minHeight: "100vh",
-          overflowY: "auto",
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ width: "100%", maxWidth: "520px" }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "24px",
-            }}
-          >
-            <img
-              src={Logo}
-              alt="Logo"
-              style={{ height: "60px", objectFit: "contain" }}
-            />
-            <button
-              onClick={() => setShowResumeForm(true)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: colors.primary[600],
-                fontSize: "14px",
-                fontWeight: 500,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              Resume Application
-            </button>
-          </div>
-
-          {/* Main Card */}
-          <div style={styles.card}>
-            <ProgressSteps currentStep={1} />
-
-            <div style={{ marginBottom: "32px" }}>
-              <h1
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: colors.neutral[900],
-                  marginBottom: "8px",
-                }}
-              >
-                {showResumeForm ? "Resume Your Application" : "Get Started"}
-              </h1>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: colors.neutral[500],
-                }}
-              >
-                {showResumeForm
-                  ? "Enter your email to continue where you left off."
-                  : "Complete the form below to begin your loan application."}
-              </p>
-            </div>
-
-            <form onSubmit={isOTP ? handleOTPSubmit : handleSubmit}>
-              {showResumeForm ? (
-                <div>
-                  <ModernInput
-                    label="Email Address"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={resumeEmail}
-                    onChange={(e) => setResumeEmail(e.target.value)}
-                    icon={<Mail size={20} />}
-                    required
-                  />
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <button
-                      type="button"
-                      onClick={handleResumeApplication}
-                      disabled={statusLoading || !resumeEmail}
-                      style={{
-                        ...styles.button,
-                        flex: 1,
-                        opacity: statusLoading || !resumeEmail ? 0.7 : 1,
-                        cursor:
-                          statusLoading || !resumeEmail
-                            ? "not-allowed"
-                            : "pointer",
+                {resumeCodeSent && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                    style={{ overflow: "hidden", display: "flex", flexDirection: "column", gap: "22px" }}
+                  >
+                    <Callout icon={Mail}>
+                      If an application exists for this email, we&rsquo;ve sent a code.
+                    </Callout>
+                    <OtpInput
+                      label="Enter the code we emailed you"
+                      value={resumeOtp}
+                      onChange={(v) => {
+                        setResumeOtp(v);
+                        if (resumeError) setResumeError("");
                       }}
-                    >
-                      {statusLoading ? (
-                        <>
-                          <Loader2
-                            size={18}
-                            className="animate-spin"
-                            style={{ animation: "spin 1s linear infinite" }}
-                          />
-                          Finding...
-                        </>
-                      ) : (
-                        <>
-                          Resume
-                          <ArrowRight size={18} />
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowResumeForm(false)}
-                      style={{
-                        ...styles.button,
-                        flex: 1,
-                        background: colors.neutral[100],
-                        color: colors.neutral[700],
-                        boxShadow: "none",
+                      error={resumeError || undefined}
+                      hint={
+                        resumeCodeLeft > 0
+                          ? `The code expires in ${formatCountdown(resumeCodeLeft)}.`
+                          : "This code has expired. Request a new one."
+                      }
+                      action={{
+                        label: resumeOtpLoading
+                          ? "Sending..."
+                          : resendWait > 0
+                          ? `Resend in ${formatCountdown(resendWait)}`
+                          : "Resend code",
+                        onClick: () => requestResumeCode(resumeEmail),
+                        disabled: resumeOtpLoading || resendWait > 0,
                       }}
-                    >
-                      Cancel
-                    </button>
+                    />
+                  </motion.div>
+                )}
+
+                <div style={{ display: "flex", gap: "16px", marginTop: "auto" }}>
+                  <SecondaryButton
+                    icon={ArrowLeft}
+                    onClick={() => {
+                      // Back from the code steps to the email; back from the
+                      // email leaves the resume form.
+                      if (resumeCodeSent) {
+                        resetResumeCode();
+                        return;
+                      }
+                      setShowResumeForm(false);
+                      setResumeEmail("");
+                      setResumeError("");
+                    }}
+                  >
+                    Back
+                  </SecondaryButton>
+                  <div style={{ flexGrow: 1 }}>
+                    {resumeCodeSent ? (
+                      <PrimaryButton
+                        submit
+                        loading={statusLoading}
+                        disabled={resumeOtp.length !== 6}
+                      >
+                        {statusLoading ? "Finding your application" : "Resume"}
+                      </PrimaryButton>
+                    ) : (
+                      <PrimaryButton
+                        submit
+                        loading={resumeOtpLoading}
+                        disabled={!resumeEmail}
+                      >
+                        {resumeOtpLoading ? "Sending code" : "Send code"}
+                      </PrimaryButton>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <>
-                  <ModernSelect
-                    options={EMPLOYERS}
-                    value={employer}
-                    onChange={setEmployer}
-                    placeholder="Select your employer"
-                    label="Employer"
+              </>
+            ) : (
+              <>
+                <FieldRow>
+                  <Field
+                    label="First name"
+                    autoComplete="given-name"
+                    placeholder="Enter first name"
+                    value={firstName}
+                    onChange={setFirstName}
+                    icon={User}
+                    maxLength={NAME_MAX_LENGTH}
                   />
+                  <Field
+                    label="Last name"
+                    autoComplete="family-name"
+                    placeholder="Enter last name"
+                    value={lastName}
+                    onChange={setLastName}
+                    icon={User}
+                    maxLength={NAME_MAX_LENGTH}
+                  />
+                </FieldRow>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "16px",
-                    }}
-                  >
-                    <ModernInput
-                      label="First Name"
-                      type="text"
-                      placeholder="Enter first name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      icon={<User size={20} />}
-                      required
-                    />
-                    <ModernInput
-                      label="Last Name"
-                      type="text"
-                      placeholder="Enter last name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      icon={<User size={20} />}
-                      required
-                    />
-                  </div>
-
-                  <ModernInput
-                    label="Email Address"
-                    type="email"
+                <FieldRow>
+                  <Field
+                    label="Email address"
+                    inputType="email"
+                    inputMode="email"
+                    autoComplete="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    icon={<Mail size={20} />}
-                    required
+                    onChange={setEmail}
+                    icon={Mail}
+                    maxLength={EMAIL_MAX_LENGTH}
+                    hint="We send your offer letter here."
                   />
-
-                  <ModernInput
-                    label="Phone Number"
-                    type="tel"
+                  <Field
+                    label="Phone number"
+                    inputType="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     placeholder="Enter your phone number"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    icon={<Phone size={20} />}
-                    required
-                    maxLength={11}
+                    onChange={(value) =>
+                      setPhoneNumber(value.replace(/[^\d+]/g, "").replace(/(?!^)\+/g, ""))
+                    }
+                    icon={Phone}
+                    maxLength={PHONE_MAX_LENGTH}
+                    hint="Used for one-time codes only."
                   />
+                </FieldRow>
 
-                  <div style={{ marginBottom: "20px" }}>
-                    <label style={styles.label}>Date of Birth</label>
-                    <div style={{ position: "relative" }}>
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: "16px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: colors.neutral[400],
-                          pointerEvents: "none",
-                          zIndex: 1,
-                        }}
-                      >
-                        <Calendar size={20} />
-                      </div>
-                      <input
-                        type="date"
-                        value={dob.toISOString().split("T")[0]}
-                        onChange={(e) => setDob(new Date(e.target.value))}
-                        required
-                        style={{
-                          ...styles.input,
-                          paddingLeft: "48px",
-                        }}
-                      />
-                    </div>
-                  </div>
+                <Field
+                  label="Date of birth"
+                  inputType="date"
+                  value={dob}
+                  onChange={setDob}
+                  icon={Calendar}
+                  hint="You must be 18 or older to apply."
+                  inputAttrs={{ max: toDateInputValue(eighteenYearsAgo), required: true }}
+                />
 
-                  {isOTP && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ModernInput
-                        label="Email OTP"
-                        type="text"
-                        placeholder="Enter 6-digit OTP"
-                        value={otp}
-                        onChange={(e) => {
-                          if (
-                            e.target.value.length <= 6 &&
-                            /^\d*$/.test(e.target.value)
-                          ) {
-                            setOtp(e.target.value);
-                          }
-                        }}
-                        icon={<KeyRound size={20} />}
-                        maxLength={6}
-                        required
-                      />
-                    </motion.div>
-                  )}
+                {isOTP && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <OtpInput
+                      label="Enter the code we emailed you"
+                      value={otp}
+                      onChange={setOtp}
+                      hint={`Sent to ${email || "your email address"}.`}
+                      action={
+                        resendOTP
+                          ? {
+                              label: resendLoading ? "Resending..." : "Resend code",
+                              onClick: handleResendOTP,
+                              disabled: resendLoading,
+                            }
+                          : undefined
+                      }
+                    />
+                  </motion.div>
+                )}
 
-                  {resendOTP && (
-                    <motion.button
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={resendLoading}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: resendLoading
-                          ? colors.neutral[400]
-                          : colors.primary[600],
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        cursor: resendLoading ? "not-allowed" : "pointer",
-                        textDecoration: "underline",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        marginBottom: "16px",
-                        padding: 0,
-                      }}
-                    >
-                      <RefreshCw
-                        size={14}
-                        className={resendLoading ? "animate-spin" : ""}
-                      />
-                      {resendLoading
-                        ? "Resending..."
-                        : "Didn't get the OTP? Resend"}
-                    </motion.button>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isAnyLoading}
+                <div
+                  style={{
+                    marginTop: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                  }}
+                >
+                  <PrimaryButton submit loading={isAnyLoading} icon={ArrowRight}>
+                    {isAnyLoading ? "Processing" : isOTP ? "Verify code" : "Get started"}
+                  </PrimaryButton>
+                  <p
                     style={{
-                      ...styles.button,
-                      ...(isAnyLoading ? styles.buttonDisabled : {}),
+                      margin: 0,
+                      textAlign: "center",
+                      font: `400 12px/1.5 ${type.body}`,
+                      color: colors.text.secondary,
                     }}
                   >
-                    {isAnyLoading ? (
-                      <>
-                        <Loader2
-                          size={20}
-                          className="animate-spin"
-                          style={{ animation: "spin 1s linear infinite" }}
-                        />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        {isOTP ? "Verify OTP" : "Get Started"}
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Resume Application Section */}
-                  {!isOTP && !showResumeForm && (
-                    <div
-                      style={{
-                        textAlign: "center",
-                        marginTop: "20px",
-                        paddingTop: "20px",
-                        borderTop: `1px solid ${colors.neutral[200]}`,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: colors.neutral[600],
-                          marginBottom: "8px",
-                        }}
-                      >
-                        Already started an application?
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowResumeForm(true)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: colors.primary[600],
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          textDecoration: "underline",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <RotateCcw size={14} />
-                        Resume Application
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Resume Form */}
-                  {!isOTP && showResumeForm && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                      style={{
-                        marginTop: "20px",
-                        paddingTop: "20px",
-                        borderTop: `1px solid ${colors.neutral[200]}`,
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: colors.neutral[700],
-                          marginBottom: "12px",
-                        }}
-                      >
-                        Resume your application
-                      </p>
-                      <ModernInput
-                        label="Email Address"
-                        type="email"
-                        placeholder="Enter your registered email"
-                        value={resumeEmail}
-                        onChange={(e) => setResumeEmail(e.target.value)}
-                        icon={<Mail size={20} />}
-                        required
-                      />
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowResumeForm(false);
-                            setResumeEmail("");
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "12px 20px",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            border: `2px solid ${colors.neutral[200]}`,
-                            borderRadius: "12px",
-                            cursor: "pointer",
-                            background: "#fff",
-                            color: colors.neutral[700],
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          <ArrowLeft size={16} />
-                          Back
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleResumeApplication}
-                          disabled={statusLoading || !resumeEmail}
-                          style={{
-                            flex: 2,
-                            padding: "12px 20px",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            border: "none",
-                            borderRadius: "12px",
-                            cursor:
-                              statusLoading || !resumeEmail
-                                ? "not-allowed"
-                                : "pointer",
-                            background:
-                              statusLoading || !resumeEmail
-                                ? colors.neutral[300]
-                                : `linear-gradient(135deg, ${colors.primary[500]} 0%, ${colors.primary[600]} 100%)`,
-                            color: "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          {statusLoading ? (
-                            <>
-                              <Loader2
-                                size={16}
-                                className="animate-spin"
-                                style={{ animation: "spin 1s linear infinite" }}
-                              />
-                              Checking...
-                            </>
-                          ) : (
-                            <>
-                              Find Application
-                              <Search size={16} />
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </>
-              )}
-            </form>
-          </div>
-
-          {/* Footer */}
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "24px",
-              fontSize: "13px",
-              color: colors.neutral[500],
-            }}
-          >
-            By continuing, you agree to our{" "}
-            <a
-              href="/terms"
-              style={{ color: colors.primary[600], textDecoration: "none" }}
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="/privacy"
-              style={{ color: colors.primary[600], textDecoration: "none" }}
-            >
-              Privacy Policy
-            </a>
-          </p>
-        </motion.div>
-      </div>
-
+                    Checking your eligibility does not affect your credit score.
+                  </p>
+                </div>
+              </>
+            )}
+          </form>
+        </Sheet>
+      </PageShell>
       {/* Consent Modal */}
       <ConsentModal
         open={showConsentModal}
@@ -2151,14 +1459,14 @@ const LoginPage: React.FC<LoginPageProps> = () => {
           const form = document.querySelector("form");
           if (form) {
             form.dispatchEvent(
-              new Event("submit", { cancelable: true, bubbles: true })
+              new Event("submit", { cancelable: true, bubbles: true }),
             );
           }
         }}
       />
 
       {/* Modal */}
-      <ModernModal
+      <Modal
         open={modal.open}
         title={modal.title}
         message={modal.message}
@@ -2185,6 +1493,22 @@ const LoginPage: React.FC<LoginPageProps> = () => {
             const stepToNavigate = resumeStatus.currentStep;
             console.log("Navigating to step:", stepToNavigate);
 
+            // Step 1 is this same page, so stay put, pre-fill the
+            // fields with the resumed application's data, and drop the
+            // user straight into the OTP screen so they can resend and
+            // verify instead of resubmitting the whole form.
+            if (stepToNavigate === 1) {
+              setEmail(resumeStatus.email || "");
+              setFirstName(resumeStatus.firstName || "");
+              setLastName(resumeStatus.lastName || "");
+              setLoanId(resumeStatus.loanId || "");
+              localStorage.setItem("loanId", resumeStatus.loanId || "");
+              setIsOTP(true);
+              setResendOTP(true);
+              setShowResumeModal(false);
+              return;
+            }
+
             // If navigating to step 4 (loan application), ensure maxLoanEligible is set
             if (
               stepToNavigate === 4 &&
@@ -2206,6 +1530,121 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         onClose={() => setShowResumeModal(false)}
       />
 
+      {/* Active Application Modal */}
+      <AnimatePresence>
+        {activeAppModal.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              style={{
+                background: "#fff",
+                borderRadius: "24px",
+                padding: "32px",
+                maxWidth: "420px",
+                width: "100%",
+                boxShadow: shadows.xl,
+              }}
+            >
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${colors.primary[100]} 0%, ${colors.secondary[100]} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <RotateCcw size={24} color={colors.primary[600]} />
+              </div>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: colors.neutral[900],
+                  marginBottom: "8px",
+                }}
+              >
+                Active Application Found
+              </h3>
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: colors.neutral[600],
+                  lineHeight: 1.6,
+                  marginBottom: "24px",
+                }}
+              >
+                {activeAppModal.message}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <button
+                  onClick={handleProceedWithActiveApp}
+                  disabled={resumeOtpLoading}
+                  style={{
+                    ...styles.button,
+                    opacity: resumeOtpLoading ? 0.7 : 1,
+                    cursor: resumeOtpLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {resumeOtpLoading ? (
+                    <>
+                      <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw size={18} />
+                      Proceed with Application
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveAppModal({ open: false, message: "" })}
+                  style={{
+                    width: "100%",
+                    padding: "14px 24px",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    border: `2px solid ${colors.neutral[200]}`,
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    background: "#fff",
+                    color: colors.neutral[700],
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  Start a New One
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Global Styles for animations */}
       <style>{`
         @keyframes spin {
@@ -2215,13 +1654,8 @@ const LoginPage: React.FC<LoginPageProps> = () => {
         .animate-spin {
           animation: spin 1s linear infinite;
         }
-        @media (min-width: 1024px) {
-          .left-panel-desktop {
-            display: flex !important;
-          }
-        }
       `}</style>
-    </div>
+    </>
   );
 };
 

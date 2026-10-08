@@ -32,6 +32,7 @@ export interface SavePersonalDetailsResponse {
   message: string;
   data: null | {
     maxLoanEligible?: number;
+    monoCustomerId?: string;
   };
 }
 export interface LoanBreakdownRequest {
@@ -84,11 +85,26 @@ export interface CurrentStatusResponse {
   data: CurrentStatusData | null;
 }
 
+// Which backend this build talks to is decided at build time by
+// REACT_APP_API_BASE_URL. Defaults live in .env.development (staging) and
+// .env.production (production); a host such as Vercel overrides both by
+// setting the variable per environment.
+//
+// Deliberately no fallback: a build with no API URL must fail loudly rather
+// than quietly pointing a staging site at the production backend.
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "REACT_APP_API_BASE_URL is not set. Set it in the deployment environment, " +
+      "or restore .env.development / .env.production."
+  );
+}
+
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl:
-      "https://staginlending-fvexbmfhawe7e6ad.southafricanorth-01.azurewebsites.net/api/v1",
+    baseUrl: API_BASE_URL,
     prepareHeaders: (headers) => {
       // Add any required headers here
       headers.set("Content-Type", "application/json");
@@ -244,16 +260,41 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
-    // Get current application status for resuming
+    // Resume step 1: emails a 6-digit code. Succeeds whether or not an
+    // application exists for the email, so it never confirms one does.
+    requestResumeOtp: builder.mutation<
+      { success: boolean; message: string },
+      { email: string }
+    >({
+      query: (body) => ({
+        url: "/Borrower/resume/request-otp",
+        method: "POST",
+        body,
+      }),
+    }),
+    // Resume step 2: checks the emailed code and returns the current step
     getCurrentStatus: builder.mutation<
       CurrentStatusResponse,
-      { email: string }
+      { email: string; otp: string }
     >({
       query: (body) => ({
         url: "/Borrower/current-step",
         method: "POST",
         body,
       }),
+    }),
+    getBanks: builder.query<{ code: string; name: string }[], void>({
+      query: () => ({ url: "/Mono/banks", method: "GET" }),
+      transformResponse: (response: unknown) => {
+        const r = response as Record<string, unknown>;
+        const inner = r?.data as Record<string, unknown> | undefined;
+        const list = inner?.data;
+        if (!Array.isArray(list)) return [];
+        return list.map((b: { bank_code: string; name: string }) => ({
+          code: b.bank_code,
+          name: b.name,
+        }));
+      },
     }),
     // Upload signed offer letter
     uploadSignedOfferLetter: builder.mutation<
@@ -293,6 +334,8 @@ export const {
   useResendEmailOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useRequestResumeOtpMutation,
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
+  useGetBanksQuery,
 } = baseApi;

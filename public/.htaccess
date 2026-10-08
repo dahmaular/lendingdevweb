@@ -1,0 +1,63 @@
+# Apache config for the cPanel-hosted production build.
+# CRA copies everything in public/ (except index.html) into build/, so this file
+# ships with every upload. Keep it here rather than editing it in cPanel's File
+# Manager, or the next upload silently reverts it.
+
+# ----------------------------------------------------------------------
+# Routing
+# ----------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Build assets are never client-side routes. A missing file under /static/
+  # must 404 loudly instead of returning index.html with a 200, which is what
+  # turns a bad upload into a silent white screen. The env var is picked up by
+  # the caching block below.
+  RewriteRule ^static/ - [E=HASHED_ASSET:1,L]
+
+  # Serve anything that actually exists on disk as-is.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Everything else is a react-router route.
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# ----------------------------------------------------------------------
+# Caching
+# ----------------------------------------------------------------------
+<IfModule mod_headers.c>
+  # /static/* filenames carry a content hash, so a changed file is always a
+  # changed URL and these can be cached indefinitely.
+  Header set Cache-Control "public, max-age=31536000, immutable" env=HASHED_ASSET
+
+  # index.html points at those hashed bundles, so it must be revalidated on
+  # every visit. Without this, a cached copy keeps pointing at a deleted build
+  # and there is no way to correct a bad deploy short of waiting it out.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  # Unhashed root assets: short cache, still correctable within the hour.
+  <FilesMatch "^(manifest\.json|robots\.txt|favicon\.ico|logo\d+\.png)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+</IfModule>
+
+# ----------------------------------------------------------------------
+# Source maps
+# ----------------------------------------------------------------------
+# GENERATE_SOURCEMAP=false in .env means these should not exist in the build at
+# all. This is a backstop in case a map is ever produced or left behind by an
+# older upload.
+<FilesMatch "\.map$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

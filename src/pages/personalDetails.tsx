@@ -2,19 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  User,
   MapPin,
   CreditCard,
-  Upload,
-  FileText,
   ChevronDown,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
-  X,
   Shield,
-  Loader2,
-  FileImage,
   AlertCircle,
   Home,
   Calendar,
@@ -23,49 +17,20 @@ import {
   useSavePersonalDetailsMutation,
   useUploadIDMutation,
 } from "../store/services/baseApi";
-
-// ============== Color Theme ==============
-const colors = {
-  primary: {
-    main: "#1E88E5",
-    light: "#64B5F6",
-    dark: "#1565C0",
-    gradient: "linear-gradient(135deg, #1E88E5 0%, #1565C0 100%)",
-  },
-  secondary: {
-    main: "#00ACC1",
-    light: "#4DD0E1",
-    dark: "#00838F",
-  },
-  background: {
-    main: "#F8FAFC",
-    card: "#FFFFFF",
-    elevated: "rgba(255, 255, 255, 0.95)",
-  },
-  text: {
-    primary: "#1E293B",
-    secondary: "#64748B",
-    muted: "#94A3B8",
-  },
-  border: {
-    light: "#E2E8F0",
-    focus: "#1E88E5",
-  },
-  status: {
-    success: "#00C853",
-    error: "#FF4757",
-    warning: "#FFB020",
-  },
-};
-
-const shadows = {
-  sm: "0 1px 2px rgba(0, 0, 0, 0.05)",
-  md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-  lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-  xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-  glow: "0 0 20px rgba(30, 136, 229, 0.3)",
-  card: "0 4px 20px rgba(0, 0, 0, 0.08)",
-};
+import { brand, colors, controls, radii, shadows, type } from "../theme";
+import {
+  Callout,
+  Dropzone,
+  Field,
+  FieldRow,
+  PageShell,
+  PrimaryButton,
+  Receipt,
+  SecondaryButton,
+  SectionLabel,
+  Sheet,
+  SheetTitle,
+} from "../components/chrome";
 
 const IDENTIFICATION_TYPES = [
   "International Passport",
@@ -73,6 +38,21 @@ const IDENTIFICATION_TYPES = [
   "Driver's License",
   "Voter's Card",
 ];
+
+/**
+ * Character limits per ID: passport A12345678 (9), NIN 11 digits, FRSC
+ * licence ABC12345AB12 (12), voter's card VIN (19).
+ */
+const ID_NUMBER_LENGTH: Record<string, { min: number; max: number; numeric?: boolean }> = {
+  "International Passport": { min: 9, max: 9 },
+  "National ID Card": { min: 11, max: 11, numeric: true },
+  "Driver's License": { min: 12, max: 12 },
+  "Voter's Card": { min: 19, max: 19 },
+};
+
+/** Only passports and driver's licences expire; the other IDs do not. */
+const requiresExpiryDate = (idType: string): boolean =>
+  idType === "International Passport" || idType === "Driver's License";
 
 // ============== Employers List ==============
 const EMPLOYERS_LIST = [
@@ -557,130 +537,24 @@ export const IDENTIFICATION_OPTIONS = IDENTIFICATION_TYPES.map((type) => ({
   name: type,
 }));
 // ============== Styles ==============
+/**
+ * What is left of this screen's local styles: the address autocomplete and the
+ * two bespoke pickers keep their own markup — the Places binding needs the real
+ * input element — so they carry Ledger-matched copies of the shared Field's
+ * metrics rather than the chrome components themselves.
+ */
 const styles = {
-  container: {
-    minHeight: "100vh",
-    background: `linear-gradient(135deg, ${colors.background.main} 0%, #E3F2FD 100%)`,
-    padding: "24px",
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  } as React.CSSProperties,
-
-  innerContainer: {
-    maxWidth: "640px",
-    margin: "0 auto",
-  } as React.CSSProperties,
-
-  header: {
-    textAlign: "center" as const,
-    marginBottom: "32px",
-  },
-
-  logo: {
-    width: "160px",
-    height: "auto",
-    marginBottom: "16px",
-  },
-
-  progressContainer: {
-    marginBottom: "32px",
-  } as React.CSSProperties,
-
-  progressSteps: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0",
-  } as React.CSSProperties,
-
-  stepItem: (active: boolean, completed: boolean) =>
-    ({
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-    } as React.CSSProperties),
-
-  stepCircle: (active: boolean, completed: boolean) =>
-    ({
-      width: "40px",
-      height: "40px",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: completed
-        ? colors.status.success
-        : active
-        ? colors.primary.gradient
-        : "#E2E8F0",
-      color: completed || active ? "#FFFFFF" : colors.text.muted,
-      fontSize: "14px",
-      fontWeight: 600,
-      transition: "all 0.3s ease",
-      boxShadow: active ? shadows.glow : "none",
-    } as React.CSSProperties),
-
-  stepLine: (completed: boolean) =>
-    ({
-      width: "40px",
-      height: "3px",
-      background: completed ? colors.status.success : "#E2E8F0",
-      borderRadius: "2px",
-      marginLeft: "4px",
-      marginRight: "4px",
-    } as React.CSSProperties),
-
-  card: {
-    background: colors.background.card,
-    borderRadius: "20px",
-    padding: "32px",
-    boxShadow: shadows.card,
-    border: `1px solid ${colors.border.light}`,
-  } as React.CSSProperties,
-
-  title: {
-    fontSize: "24px",
-    fontWeight: 700,
-    color: colors.text.primary,
-    marginBottom: "8px",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  } as React.CSSProperties,
-
-  subtitle: {
-    fontSize: "15px",
-    color: colors.text.secondary,
-    marginBottom: "24px",
-    lineHeight: 1.6,
-  } as React.CSSProperties,
-
-  formSection: {
-    marginBottom: "24px",
-  } as React.CSSProperties,
-
-  sectionTitle: {
-    fontSize: "14px",
-    fontWeight: 600,
-    color: colors.text.primary,
-    marginBottom: "16px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.5px",
-  } as React.CSSProperties,
-
   inputGroup: {
-    marginBottom: "16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "9px",
+    flexGrow: 1,
   } as React.CSSProperties,
 
   label: {
     display: "block",
-    fontSize: "14px",
-    fontWeight: 500,
+    font: `600 14px/1 ${type.body}`,
     color: colors.text.primary,
-    marginBottom: "6px",
   } as React.CSSProperties,
 
   inputWrapper: {
@@ -689,53 +563,72 @@ const styles = {
 
   input: {
     width: "100%",
-    padding: "14px 16px 14px 44px",
-    fontSize: "15px",
-    border: `2px solid ${colors.border.light}`,
-    borderRadius: "12px",
+    height: `${controls.fieldHeight}px`,
+    padding: "0 18px 0 48px",
+    font: `400 16px/1 ${type.body}`,
+    color: colors.text.primary,
+    border: `1px solid ${colors.border.light}`,
+    borderRadius: `${radii.md}px`,
     outline: "none",
-    transition: "all 0.2s ease",
+    transition: "border-color 120ms ease, box-shadow 120ms ease",
     background: "#FFFFFF",
     boxSizing: "border-box" as const,
+  } as React.CSSProperties,
+
+  triggerIcon: {
+    display: "flex",
+    color: colors.text.muted,
+    flexShrink: 0,
   } as React.CSSProperties,
 
   inputIcon: {
     position: "absolute" as const,
-    left: "14px",
+    left: "18px",
     top: "50%",
     transform: "translateY(-50%)",
     color: colors.text.muted,
     pointerEvents: "none" as const,
+    display: "flex",
+  } as React.CSSProperties,
+
+  error: {
+    font: `400 13px/1.45 ${type.body}`,
+    color: colors.status.error,
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
   } as React.CSSProperties,
 
   selectContainer: {
     position: "relative" as const,
-    marginBottom: "16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "9px",
   } as React.CSSProperties,
 
   selectTrigger: {
-    width: "100%",
-    padding: "14px 16px 14px 44px",
-    fontSize: "15px",
-    border: `2px solid ${colors.border.light}`,
-    borderRadius: "12px",
-    background: "#FFFFFF",
-    cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    transition: "all 0.2s ease",
-    boxSizing: "border-box" as const,
+    gap: "12px",
+    height: `${controls.fieldHeight}px`,
+    padding: "0 18px",
+    background: "#FFFFFF",
+    border: `1px solid ${colors.border.light}`,
+    borderRadius: `${radii.md}px`,
+    cursor: "pointer",
+    font: `400 16px/1 ${type.body}`,
+    color: colors.text.primary,
   } as React.CSSProperties,
 
   dropdown: {
     position: "absolute" as const,
-    top: "calc(100% + 4px)",
+    top: "calc(100% + 6px)",
     left: 0,
     right: 0,
-    background: "#FFFFFF",
-    borderRadius: "12px",
-    boxShadow: shadows.xl,
+    background: colors.background.card,
+    borderRadius: `${radii.md}px`,
+    boxShadow: shadows.lg,
     border: `1px solid ${colors.border.light}`,
     zIndex: 100,
     maxHeight: "300px",
@@ -745,106 +638,32 @@ const styles = {
   searchInput: {
     width: "100%",
     padding: "14px 16px 14px 44px",
-    fontSize: "14px",
+    font: `400 15px/1 ${type.body}`,
+    color: colors.text.primary,
     border: "none",
     borderBottom: `1px solid ${colors.border.light}`,
     outline: "none",
+    background: colors.background.main,
     boxSizing: "border-box" as const,
   } as React.CSSProperties,
 
   optionsList: {
-    maxHeight: "240px",
-    overflow: "auto",
+    maxHeight: "244px",
+    overflowY: "auto" as const,
   } as React.CSSProperties,
 
   option: {
-    padding: "12px 16px",
-    fontSize: "14px",
-    cursor: "pointer",
-    transition: "background 0.15s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  } as React.CSSProperties,
-
-  fileUpload: {
-    border: `2px dashed ${colors.border.light}`,
-    borderRadius: "16px",
-    padding: "32px 24px",
-    textAlign: "center" as const,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    background: "#FAFAFA",
-  } as React.CSSProperties,
-
-  filePreview: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "16px",
-    background: "#F8FAFC",
-    borderRadius: "12px",
-    border: `1px solid ${colors.border.light}`,
-  } as React.CSSProperties,
-
-  button: {
-    width: "100%",
-    padding: "16px 24px",
-    fontSize: "16px",
-    fontWeight: 600,
-    color: "#FFFFFF",
-    background: colors.primary.gradient,
-    border: "none",
-    borderRadius: "12px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    transition: "all 0.2s ease",
-    boxShadow: shadows.md,
-  } as React.CSSProperties,
-
-  buttonSecondary: {
-    width: "100%",
-    padding: "14px 24px",
-    fontSize: "15px",
-    fontWeight: 500,
+    padding: "13px 16px",
+    font: `400 15px/1.3 ${type.body}`,
     color: colors.text.primary,
-    background: "#F1F5F9",
-    border: "none",
-    borderRadius: "12px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    transition: "all 0.2s ease",
-  } as React.CSSProperties,
-
-  buttonGroup: {
-    display: "flex",
+    // flex-start, not space-between: each row is icon + label, and the
+    // selected tick pushes itself right with margin-left:auto
+    justifyContent: "flex-start",
+    textAlign: "left" as const,
     gap: "12px",
-    marginTop: "24px",
-  } as React.CSSProperties,
-
-  error: {
-    fontSize: "13px",
-    color: colors.status.error,
-    marginTop: "6px",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-  } as React.CSSProperties,
-
-  infoBox: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "12px",
-    padding: "16px",
-    background: "#EEF6FF",
-    borderRadius: "12px",
-    marginBottom: "24px",
   } as React.CSSProperties,
 };
 
@@ -897,7 +716,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
         }}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span style={styles.inputIcon}>
+        <span style={styles.triggerIcon}>
           <Briefcase size={18} />
         </span>
         <span
@@ -953,7 +772,7 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   key={employer}
                   style={{
                     ...styles.option,
-                    background: employer === value ? "#EEF6FF" : "transparent",
+                    background: employer === value ? brand.wash : "transparent",
                   }}
                   onClick={() => {
                     onChange(employer);
@@ -961,11 +780,11 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                     setSearch("");
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      employer === value ? "#EEF6FF" : "transparent";
+                      employer === value ? brand.wash : "transparent";
                   }}
                 >
                   <Building2 size={16} color={colors.text.muted} />
@@ -973,8 +792,8 @@ const EmployerSelect: React.FC<EmployerSelectProps> = ({
                   {employer === value && (
                     <CheckCircle
                       size={16}
-                      color={colors.status.success}
-                      style={{ marginLeft: "auto" }}
+                      color={colors.secondary.main}
+                      style={{ marginLeft: "auto", flexShrink: 0 }}
                     />
                   )}
                 </div>
@@ -1041,12 +860,12 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
           borderColor: error
             ? colors.status.error
             : isOpen
-            ? colors.primary.main
-            : colors.border.light,
+              ? colors.primary.main
+              : colors.border.light,
         }}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span style={styles.inputIcon}>
+        <span style={styles.triggerIcon}>
           <CreditCard size={18} />
         </span>
         <span
@@ -1083,18 +902,18 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   key={idType}
                   style={{
                     ...styles.option,
-                    background: idType === value ? "#EEF6FF" : "transparent",
+                    background: idType === value ? brand.wash : "transparent",
                   }}
                   onClick={() => {
                     onChange(idType);
                     setIsOpen(false);
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
-                      idType === value ? "#EEF6FF" : "transparent";
+                      idType === value ? brand.wash : "transparent";
                   }}
                 >
                   <CreditCard size={16} color={colors.text.muted} />
@@ -1102,8 +921,8 @@ const IdentificationTypeSelect: React.FC<IdentificationTypeSelectProps> = ({
                   {idType === value && (
                     <CheckCircle
                       size={16}
-                      color={colors.status.success}
-                      style={{ marginLeft: "auto" }}
+                      color={colors.secondary.main}
+                      style={{ marginLeft: "auto", flexShrink: 0 }}
                     />
                   )}
                 </div>
@@ -1206,7 +1025,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
             setSuggestions([]);
             setShowSuggestions(false);
           }
-        }
+        },
       );
     } else {
       setSuggestions([]);
@@ -1304,7 +1123,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
                   }}
                   onClick={() => handleSelectSuggestion(suggestion)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#F8FAFC";
+                    e.currentTarget.style.background = colors.background.main;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
@@ -1343,7 +1162,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
                   color: colors.text.muted,
                   textAlign: "right",
                   borderTop: `1px solid ${colors.border.light}`,
-                  background: "#FAFAFA",
+                  background: colors.background.main,
                 }}
               >
                 Powered by Google
@@ -1357,51 +1176,6 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
           <AlertCircle size={14} /> {error}
         </div>
       )}
-    </div>
-  );
-};
-
-// ============== Progress Steps Component ==============
-const ProgressSteps: React.FC<{ currentStep: number }> = ({ currentStep }) => {
-  const steps = [
-    { icon: User, label: "Start" },
-    { icon: FileText, label: "Review" },
-    { icon: User, label: "Details" },
-    { icon: CreditCard, label: "Loan" },
-    { icon: CheckCircle, label: "Confirm" },
-  ];
-
-  return (
-    <div style={styles.progressContainer}>
-      <div style={styles.progressSteps}>
-        {steps.map((step, index) => {
-          const StepIcon = step.icon;
-          const isActive = index + 1 === currentStep;
-          const isCompleted = index + 1 < currentStep;
-
-          return (
-            <React.Fragment key={index}>
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: index * 0.1 }}
-                style={styles.stepItem(isActive, isCompleted)}
-              >
-                <div style={styles.stepCircle(isActive, isCompleted)}>
-                  {isCompleted ? (
-                    <CheckCircle size={18} />
-                  ) : (
-                    <StepIcon size={18} />
-                  )}
-                </div>
-              </motion.div>
-              {index < steps.length - 1 && (
-                <div style={styles.stepLine(isCompleted)} />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
     </div>
   );
 };
@@ -1422,24 +1196,27 @@ const PersonalDetails: React.FC = () => {
   });
   const [frontDocument, setFrontDocument] = useState<File | null>(null);
   const [backDocument, setBackDocument] = useState<File | null>(null);
+
+  // A passport carries everything on the photo page, so there is no back to
+  // upload — the field is hidden and left out of validation entirely.
+  const isPassport = formData.identificationType === "International Passport";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const frontFileInputRef = useRef<HTMLInputElement>(null);
-  const backFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      // Clear expiry date if switching to an ID type that doesn't require it
-      if (field === "identificationType") {
-        const requiresExpiry =
-          value === "International Passport" || value === "Driver's License";
-        if (!requiresExpiry) {
-          newData.expiryDate = "";
-        }
+      // A different ID means a different number and expiry — start both over.
+      if (field === "identificationType" && value !== prev.identificationType) {
+        newData.idNumber = "";
+        newData.expiryDate = "";
       }
       return newData;
     });
+    if (field === "identificationType" && value === "International Passport") {
+      setBackDocument(null);
+      setErrors((prev) => ({ ...prev, backDocument: "" }));
+    }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -1452,9 +1229,8 @@ const PersonalDetails: React.FC = () => {
 
   const validateField = (field: string) => {
     let error = "";
-    const requiresExpiry =
-      formData.identificationType === "International Passport" ||
-      formData.identificationType === "Driver's License";
+    const requiresExpiry = requiresExpiryDate(formData.identificationType);
+    const idLength = ID_NUMBER_LENGTH[formData.identificationType];
 
     switch (field) {
       // case "employer":
@@ -1471,8 +1247,8 @@ const PersonalDetails: React.FC = () => {
         break;
       case "idNumber":
         if (!formData.idNumber) error = "Please enter your ID number";
-        else if (formData.idNumber.length < 5)
-          error = "ID number must be at least 5 characters";
+        else if (idLength && formData.idNumber.length < idLength.min)
+          error = `Your ${formData.identificationType} number must be ${idLength.min} characters`;
         break;
       case "expiryDate":
         if (requiresExpiry && !formData.expiryDate) {
@@ -1492,13 +1268,16 @@ const PersonalDetails: React.FC = () => {
   };
 
   const validateForm = () => {
-    const requiresExpiry =
-      formData.identificationType === "International Passport" ||
-      formData.identificationType === "Driver's License";
     const fields = ["addressLine", "identificationType", "idNumber"];
-    if (requiresExpiry) {
+    if (requiresExpiryDate(formData.identificationType)) {
       fields.push("expiryDate");
     }
+    // Errors only show on touched fields, so mark every one checked here —
+    // otherwise a missing value fails silently.
+    setTouched((prev) => ({
+      ...prev,
+      ...Object.fromEntries(fields.map((field) => [field, true])),
+    }));
     let isValid = true;
     fields.forEach((field) => {
       if (!validateField(field)) isValid = false;
@@ -1510,7 +1289,7 @@ const PersonalDetails: React.FC = () => {
       }));
       isValid = false;
     }
-    if (!backDocument) {
+    if (!isPassport && !backDocument) {
       setErrors((prev) => ({
         ...prev,
         backDocument: "Please upload the back of your ID document",
@@ -1520,64 +1299,58 @@ const PersonalDetails: React.FC = () => {
     return isValid;
   };
 
-  const handleFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const validTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/jpg",
-        "application/pdf",
-      ];
-      const maxSize = 5 * 1024 * 1024; // 5MB
+  const handleFrontFile = (file: File) => {
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "application/pdf",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
-      if (!validTypes.includes(file.type)) {
-        setErrors((prev) => ({
-          ...prev,
-          frontDocument: "Please upload a valid image (JPG, PNG) or PDF file",
-        }));
-        return;
-      }
-      if (file.size > maxSize) {
-        setErrors((prev) => ({
-          ...prev,
-          frontDocument: "File size must be less than 5MB",
-        }));
-        return;
-      }
-      setFrontDocument(file);
-      setErrors((prev) => ({ ...prev, frontDocument: "" }));
+    if (!validTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        frontDocument: "Please upload a valid image (JPG, PNG) or PDF file",
+      }));
+      return;
     }
+    if (file.size > maxSize) {
+      setErrors((prev) => ({
+        ...prev,
+        frontDocument: "File size must be less than 5MB",
+      }));
+      return;
+    }
+    setFrontDocument(file);
+    setErrors((prev) => ({ ...prev, frontDocument: "" }));
   };
 
-  const handleBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const validTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/jpg",
-        "application/pdf",
-      ];
-      const maxSize = 5 * 1024 * 1024; // 5MB
+  const handleBackFile = (file: File) => {
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "application/pdf",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
-      if (!validTypes.includes(file.type)) {
-        setErrors((prev) => ({
-          ...prev,
-          backDocument: "Please upload a valid image (JPG, PNG) or PDF file",
-        }));
-        return;
-      }
-      if (file.size > maxSize) {
-        setErrors((prev) => ({
-          ...prev,
-          backDocument: "File size must be less than 5MB",
-        }));
-        return;
-      }
-      setBackDocument(file);
-      setErrors((prev) => ({ ...prev, backDocument: "" }));
+    if (!validTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        backDocument: "Please upload a valid image (JPG, PNG) or PDF file",
+      }));
+      return;
     }
+    if (file.size > maxSize) {
+      setErrors((prev) => ({
+        ...prev,
+        backDocument: "File size must be less than 5MB",
+      }));
+      return;
+    }
+    setBackDocument(file);
+    setErrors((prev) => ({ ...prev, backDocument: "" }));
   };
 
   // Convert file to base64 (strips the data URL prefix)
@@ -1620,7 +1393,7 @@ const PersonalDetails: React.FC = () => {
     try {
       const loanId = localStorage.getItem("loanId");
       if (!loanId) {
-        navigate("/");
+        navigate("/apply");
         return;
       }
 
@@ -1668,11 +1441,14 @@ const PersonalDetails: React.FC = () => {
         console.log("Back document uploaded. ID:", backId);
       }
 
+      const bvn = localStorage.getItem("bvn");
+
       const formDataToSubmit = {
         address: formData.addressLine,
         idNumber: formData.idNumber,
         imageIds: imageIds,
         loanId: loanId,
+        ...(bvn ? { bvn } : {}),
       };
       console.log("Submitting form data:", formDataToSubmit);
 
@@ -1686,9 +1462,15 @@ const PersonalDetails: React.FC = () => {
         if (response.data?.maxLoanEligible) {
           localStorage.setItem(
             "maxLoanEligible",
-            response.data.maxLoanEligible.toString()
+            response.data.maxLoanEligible.toString(),
           );
           console.log("Stored maxLoanEligible:", response.data.maxLoanEligible);
+        }
+
+        // Store monoCustomerId so step4 (loan submission) can send it
+        if (response.data?.monoCustomerId) {
+          localStorage.setItem("monoCustomerId", response.data.monoCustomerId);
+          console.log("Stored monoCustomerId:", response.data.monoCustomerId);
         }
 
         navigate("/loan-application");
@@ -1702,569 +1484,176 @@ const PersonalDetails: React.FC = () => {
     }
   };
 
+  const busy = isLoading || isUploading;
+  const idLength = ID_NUMBER_LENGTH[formData.identificationType];
+  const requiresExpiry = requiresExpiryDate(formData.identificationType);
+  const tomorrow = (() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
+  })();
+
   return (
-    <div style={styles.container}>
-      <div style={styles.innerContainer}>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={styles.header}
+    <PageShell
+      step={3}
+      headerAction={{
+        label: "Back",
+        onClick: () => navigate("/statement-review"),
+      }}
+      aside={
+        <Receipt
+          rows={[
+            { label: "Address", value: formData.addressLine || undefined },
+            {
+              label: "ID type",
+              value: formData.identificationType || undefined,
+            },
+            { label: "ID number", value: formData.idNumber || undefined },
+            {
+              label: "ID document",
+              value: frontDocument ? frontDocument.name : undefined,
+            },
+          ]}
+          footer="Your documents are encrypted at rest and are only seen by the team underwriting this application."
+        />
+      }
+    >
+      <Sheet>
+        <SheetTitle
+          title="Now let's confirm it's really you"
+          subtitle="Help us verify your identity by providing your personal information and uploading a valid ID document."
+        />
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "22px",
+            flexGrow: 1,
+          }}
         >
-          <img
-            src="/logo.png"
-            alt="Logo"
-            style={styles.logo}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
+          <SectionLabel icon={Home}>Residential address</SectionLabel>
+
+          <GooglePlacesInput
+            value={formData.addressLine}
+            onChange={(value) => handleInputChange("addressLine", value)}
+            onBlur={() => handleBlur("addressLine")}
+            error={errors.addressLine}
+            touched={touched.addressLine}
           />
-        </motion.div>
 
-        <ProgressSteps currentStep={3} />
+          <SectionLabel icon={CreditCard}>Identity verification</SectionLabel>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          style={styles.card}
-        >
-          <h1 style={styles.title}>
-            <User size={28} color={colors.primary.main} />
-            Personal Details
-          </h1>
-          <p style={styles.subtitle}>
-            Help us verify your identity by providing your personal information
-            and uploading a valid ID document.
-          </p>
+          <IdentificationTypeSelect
+            value={formData.identificationType}
+            onChange={(value) => handleInputChange("identificationType", value)}
+            error={
+              touched.identificationType ? errors.identificationType : undefined
+            }
+          />
 
-          <div style={styles.infoBox}>
-            <Shield
-              size={20}
-              color={colors.primary.main}
-              style={{ flexShrink: 0, marginTop: "2px" }}
-            />
-            <div>
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: colors.text.primary,
-                  fontWeight: 500,
-                  margin: 0,
-                }}
-              >
-                Your data is secure
-              </p>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: colors.text.secondary,
-                  margin: "4px 0 0",
-                }}
-              >
-                We use bank-level encryption to protect your personal
-                information.
-              </p>
-            </div>
-          </div>
-
-          {/* Employment Section */}
-          {/* <div style={styles.formSection}>
-            <div style={styles.sectionTitle}>
-              <Briefcase size={16} color={colors.primary.main} />
-              Employment Information
-            </div>
-
-            <EmployerSelect
-              value={formData.employer}
-              onChange={(value) => handleInputChange("employer", value)}
-              error={touched.employer ? errors.employer : undefined}
-            />
-          </div> */}
-
-          {/* Address Section */}
-          <div style={styles.formSection}>
-            <div style={styles.sectionTitle}>
-              <Home size={16} color={colors.primary.main} />
-              Residential Address
-            </div>
-
-            <GooglePlacesInput
-              value={formData.addressLine}
-              onChange={(value) => handleInputChange("addressLine", value)}
-              onBlur={() => handleBlur("addressLine")}
-              error={errors.addressLine}
-              touched={touched.addressLine}
-            />
-          </div>
-
-          {/* Identity Section */}
-          <div style={styles.formSection}>
-            <div style={styles.sectionTitle}>
-              <CreditCard size={16} color={colors.primary.main} />
-              Identity Verification
-            </div>
-
-            {/* Identification Type Selector */}
-            <IdentificationTypeSelect
-              value={formData.identificationType}
-              onChange={(value) =>
-                handleInputChange("identificationType", value)
-              }
-              error={
-                touched.identificationType
-                  ? errors.identificationType
-                  : undefined
-              }
-            />
-
-            {/* ID Number - shown for all identification types */}
-            {formData.identificationType && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                style={styles.inputGroup}
-              >
-                <label style={styles.label}>ID Number *</label>
-                <div style={styles.inputWrapper}>
-                  <span style={styles.inputIcon}>
-                    <CreditCard size={18} />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder={`Enter your ${formData.identificationType} number`}
-                    value={formData.idNumber}
-                    onChange={(e) =>
-                      handleInputChange("idNumber", e.target.value)
-                    }
-                    onBlur={() => handleBlur("idNumber")}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = colors.primary.main;
-                      e.target.style.boxShadow = shadows.glow;
-                    }}
-                    onBlurCapture={(e) => {
-                      e.target.style.borderColor = errors.idNumber
-                        ? colors.status.error
-                        : colors.border.light;
-                      e.target.style.boxShadow = "none";
-                    }}
-                    style={{
-                      ...styles.input,
-                      borderColor:
-                        touched.idNumber && errors.idNumber
-                          ? colors.status.error
-                          : colors.border.light,
-                    }}
-                  />
-                </div>
-                {touched.idNumber && errors.idNumber && (
-                  <div style={styles.error}>
-                    <AlertCircle size={14} /> {errors.idNumber}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Expiry Date - only for International Passport and Driver's License */}
-            {(formData.identificationType === "International Passport" ||
-              formData.identificationType === "Driver's License") && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                style={styles.inputGroup}
-              >
-                <label style={styles.label}>Expiry Date *</label>
-                <div style={styles.inputWrapper}>
-                  <span style={styles.inputIcon}>
-                    <Calendar size={18} />
-                  </span>
-                  <input
-                    type="date"
-                    placeholder="Select expiry date"
-                    value={formData.expiryDate}
-                    onChange={(e) =>
-                      handleInputChange("expiryDate", e.target.value)
-                    }
-                    onBlur={() => handleBlur("expiryDate")}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = colors.primary.main;
-                      e.target.style.boxShadow = shadows.glow;
-                    }}
-                    onBlurCapture={(e) => {
-                      e.target.style.borderColor = errors.expiryDate
-                        ? colors.status.error
-                        : colors.border.light;
-                      e.target.style.boxShadow = "none";
-                    }}
-                    min={new Date().toISOString().split("T")[0]}
-                    style={{
-                      ...styles.input,
-                      borderColor:
-                        touched.expiryDate && errors.expiryDate
-                          ? colors.status.error
-                          : colors.border.light,
-                    }}
-                  />
-                </div>
-                {touched.expiryDate && errors.expiryDate && (
-                  <div style={styles.error}>
-                    <AlertCircle size={14} /> {errors.expiryDate}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Front Document Upload */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>ID Document (Front) *</label>
-              <input
-                type="file"
-                ref={frontFileInputRef}
-                onChange={handleFrontFileChange}
-                accept="image/*,.pdf"
-                style={{ display: "none" }}
-              />
-
-              {!frontDocument ? (
-                <motion.div
-                  whileHover={{ borderColor: colors.primary.main }}
-                  style={{
-                    ...styles.fileUpload,
-                    borderColor: errors.frontDocument
-                      ? colors.status.error
-                      : colors.border.light,
-                  }}
-                  onClick={() => frontFileInputRef.current?.click()}
-                >
-                  <motion.div
-                    initial={{ scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <Upload
-                      size={40}
-                      color={colors.primary.main}
-                      style={{ marginBottom: "12px" }}
-                    />
-                  </motion.div>
-                  <p
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: 500,
-                      color: colors.text.primary,
-                      margin: 0,
-                    }}
-                  >
-                    Click to upload front of ID
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: colors.text.muted,
-                      margin: "8px 0 0",
-                    }}
-                  >
-                    JPG, PNG or PDF (max 5MB)
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={styles.filePreview}
-                >
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      borderRadius: "12px",
-                      background: "#E3F2FD",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {frontDocument.type.includes("pdf") ? (
-                      <FileText size={24} color={colors.primary.main} />
-                    ) : (
-                      <FileImage size={24} color={colors.primary.main} />
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: colors.text.primary,
-                        margin: 0,
-                      }}
-                    >
-                      {frontDocument.name}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        color: colors.text.muted,
-                        margin: "4px 0 0",
-                      }}
-                    >
-                      {(frontDocument.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => {
-                      setFrontDocument(null);
-                      if (frontFileInputRef.current)
-                        frontFileInputRef.current.value = "";
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "8px",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <X size={20} color={colors.text.muted} />
-                  </motion.button>
-                </motion.div>
-              )}
-              {errors.frontDocument && (
-                <div style={styles.error}>
-                  <AlertCircle size={14} /> {errors.frontDocument}
-                </div>
-              )}
-            </div>
-
-            {/* Back Document Upload */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>ID Document (Back) *</label>
-              <input
-                type="file"
-                ref={backFileInputRef}
-                onChange={handleBackFileChange}
-                accept="image/*,.pdf"
-                style={{ display: "none" }}
-              />
-
-              {!backDocument ? (
-                <motion.div
-                  whileHover={{ borderColor: colors.primary.main }}
-                  style={{
-                    ...styles.fileUpload,
-                    borderColor: errors.backDocument
-                      ? colors.status.error
-                      : colors.border.light,
-                  }}
-                  onClick={() => backFileInputRef.current?.click()}
-                >
-                  <motion.div
-                    initial={{ scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <Upload
-                      size={40}
-                      color={colors.primary.main}
-                      style={{ marginBottom: "12px" }}
-                    />
-                  </motion.div>
-                  <p
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: 500,
-                      color: colors.text.primary,
-                      margin: 0,
-                    }}
-                  >
-                    Click to upload back of ID
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: colors.text.muted,
-                      margin: "8px 0 0",
-                    }}
-                  >
-                    JPG, PNG or PDF (max 5MB)
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={styles.filePreview}
-                >
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      borderRadius: "12px",
-                      background: "#E3F2FD",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {backDocument.type.includes("pdf") ? (
-                      <FileText size={24} color={colors.primary.main} />
-                    ) : (
-                      <FileImage size={24} color={colors.primary.main} />
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: colors.text.primary,
-                        margin: 0,
-                      }}
-                    >
-                      {backDocument.name}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        color: colors.text.muted,
-                        margin: "4px 0 0",
-                      }}
-                    >
-                      {(backDocument.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => {
-                      setBackDocument(null);
-                      if (backFileInputRef.current)
-                        backFileInputRef.current.value = "";
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "8px",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <X size={20} color={colors.text.muted} />
-                  </motion.button>
-                </motion.div>
-              )}
-              {errors.backDocument && (
-                <div style={styles.error}>
-                  <AlertCircle size={14} /> {errors.backDocument}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {errors.submit && (
+          {formData.identificationType && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                padding: "12px 16px",
-                background: "#FEF2F2",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: "hidden" }}
             >
-              <AlertCircle size={18} color={colors.status.error} />
-              <span style={{ fontSize: "14px", color: colors.status.error }}>
-                {errors.submit}
-              </span>
+              <FieldRow>
+                <Field
+                  label="ID number"
+                  placeholder={`Enter your ${formData.identificationType} number`}
+                  value={formData.idNumber}
+                  onChange={(v) => {
+                    const numeric = idLength?.numeric;
+                    const cleaned = numeric
+                      ? v.replace(/\D/g, "")
+                      : v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+                    handleInputChange(
+                      "idNumber",
+                      idLength ? cleaned.slice(0, idLength.max) : cleaned,
+                    );
+                  }}
+                  icon={CreditCard}
+                  inputMode={idLength?.numeric ? "numeric" : "text"}
+                  maxLength={idLength?.max}
+                  error={touched.idNumber ? errors.idNumber : undefined}
+                  hint={
+                    idLength ? `${idLength.max} characters, no spaces.` : undefined
+                  }
+                />
+                {requiresExpiry && (
+                  <Field
+                    label="Expiry date"
+                    inputType="date"
+                    value={formData.expiryDate}
+                    onChange={(v) => handleInputChange("expiryDate", v)}
+                    icon={Calendar}
+                    error={touched.expiryDate ? errors.expiryDate : undefined}
+                    hint="As printed on the document."
+                    inputAttrs={{ min: tomorrow, required: true }}
+                  />
+                )}
+              </FieldRow>
             </motion.div>
           )}
 
-          <div style={styles.buttonGroup}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              style={{ ...styles.buttonSecondary, flex: 1 }}
+          <Dropzone
+            variant="inline"
+            label="ID document (front) *"
+            file={frontDocument}
+            onFile={handleFrontFile}
+            onClear={() => setFrontDocument(null)}
+            error={errors.frontDocument}
+            title="Drop the front of your ID here, or browse"
+            caption="PNG, JPG or PDF · up to 5MB · all four corners visible"
+          />
+
+          {!isPassport && (
+            <Dropzone
+              variant="inline"
+              label="ID document (back) *"
+              file={backDocument}
+              onFile={handleBackFile}
+              onClear={() => setBackDocument(null)}
+              error={errors.backDocument}
+              title="Drop the back of your ID here, or browse"
+              caption="PNG, JPG or PDF · up to 5MB"
+            />
+          )}
+
+          <Callout icon={Shield} title="Your data is secure">
+            We use bank-level encryption to protect your personal information.
+          </Callout>
+
+          {errors.submit && (
+            <Callout icon={AlertCircle} tone="error">
+              {errors.submit}
+            </Callout>
+          )}
+
+          <div style={{ marginTop: "auto", display: "flex", gap: "16px" }}>
+            <SecondaryButton
+              icon={ArrowLeft}
               onClick={() => navigate("/statement-review")}
             >
-              <ArrowLeft size={18} />
               Back
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: shadows.lg }}
-              whileTap={{ scale: 0.98 }}
-              style={{
-                ...styles.button,
-                flex: 2,
-                opacity: isLoading || isUploading ? 0.7 : 1,
-              }}
-              onClick={handleSubmit}
-              disabled={isLoading || isUploading}
-            >
-              {isLoading || isUploading ? (
-                <>
-                  <Loader2
-                    size={20}
-                    className="animate-spin"
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />
-                  {isUploading ? "Uploading..." : "Saving..."}
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </motion.button>
+            </SecondaryButton>
+            <div style={{ flexGrow: 1 }}>
+              <PrimaryButton
+                onClick={handleSubmit}
+                loading={busy}
+                icon={ArrowRight}
+              >
+                {isUploading ? "Uploading" : isLoading ? "Saving" : "Continue"}
+              </PrimaryButton>
+            </div>
           </div>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          style={{
-            textAlign: "center",
-            fontSize: "13px",
-            color: colors.text.muted,
-            marginTop: "24px",
-          }}
-        >
-          Your information is protected with bank-level security
-        </motion.p>
-      </div>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        input::placeholder {
-          color: ${colors.text.muted};
-        }
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #F1F5F9;
-          border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #CBD5E1;
-          border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94A3B8;
-        }
-      `}</style>
-    </div>
+        </div>
+      </Sheet>
+    </PageShell>
   );
 };
 
