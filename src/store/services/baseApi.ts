@@ -260,10 +260,22 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
-    // Get current application status for resuming
+    // Resume step 1: emails a 6-digit code. Succeeds whether or not an
+    // application exists for the email, so it never confirms one does.
+    requestResumeOtp: builder.mutation<
+      { success: boolean; message: string },
+      { email: string }
+    >({
+      query: (body) => ({
+        url: "/Borrower/resume/request-otp",
+        method: "POST",
+        body,
+      }),
+    }),
+    // Resume step 2: checks the emailed code and returns the current step
     getCurrentStatus: builder.mutation<
       CurrentStatusResponse,
-      { email: string }
+      { email: string; otp: string }
     >({
       query: (body) => ({
         url: "/Borrower/current-step",
@@ -322,6 +334,7 @@ export const {
   useResendEmailOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useRequestResumeOtpMutation,
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
   useGetBanksQuery,
