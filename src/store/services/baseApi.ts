@@ -32,6 +32,9 @@ export interface SavePersonalDetailsResponse {
   message: string;
   data: null | {
     maxLoanEligible?: number;
+    minLoanEligible?: number;
+    maxTenor?: number;
+    minTenor?: number;
     monoCustomerId?: string;
   };
 }
@@ -69,8 +72,13 @@ export interface CurrentStatusData {
   emailVerifiedAt?: string;
   bvnVerifiedAt?: string;
   bankVerifiedAt?: string;
-  personalDetailsAt?: string;
+  documentsUploadedAt?: string;
   loanSubmittedAt?: string;
+  // Only sent once currentStep >= 5 (documents uploaded).
+  maxLoanEligible?: number;
+  minLoanEligible?: number;
+  maxTenor?: number;
+  minTenor?: number;
   stepNumber: number;
   totalSteps: number;
   progressPercentage: number;
@@ -174,6 +182,18 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
+    // Resends the step 2 BVN code. Works only while the application is at
+    // currentStep 3 (code sent, not yet entered), and needs the same BVN.
+    resendStep2BvnOtp: builder.mutation<
+      { success: boolean; message: string },
+      { loanId: string; bvn: string }
+    >({
+      query: (data) => ({
+        url: "/Borrower/resend-step2-bvn-otp",
+        method: "POST",
+        body: data,
+      }),
+    }),
     resendEmailOtp: builder.mutation<VerifyOtpResponse, { loanId: string }>({
       query: (data) => ({
         url: "/Borrower/resend-step1-email-otp",
@@ -260,10 +280,22 @@ export const baseApi = createApi({
         body: data,
       }),
     }),
-    // Get current application status for resuming
+    // Resume step 1: emails a 6-digit code. Succeeds whether or not an
+    // application exists for the email, so it never confirms one does.
+    requestResumeOtp: builder.mutation<
+      { success: boolean; message: string },
+      { email: string }
+    >({
+      query: (body) => ({
+        url: "/Borrower/resume/request-otp",
+        method: "POST",
+        body,
+      }),
+    }),
+    // Resume step 2: checks the emailed code and returns the current step
     getCurrentStatus: builder.mutation<
       CurrentStatusResponse,
-      { email: string }
+      { email: string; otp: string }
     >({
       query: (body) => ({
         url: "/Borrower/current-step",
@@ -320,8 +352,10 @@ export const {
   useResentBVNOtpMutation,
   useVerifyResendBVNOtpMutation,
   useResendEmailOtpMutation,
+  useResendStep2BvnOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useRequestResumeOtpMutation,
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
   useGetBanksQuery,

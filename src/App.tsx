@@ -13,6 +13,7 @@ import LoanApplicationPage from "./pages/loanApplication";
 import PersonalDetails from "./pages/personalDetails";
 import UploadOfferLetter from "./pages/uploadOfferLetter";
 import MonoComplete from "./pages/monoComplete";
+import Home from "./pages/home";
 
 // Wrapper component to use hooks
 const AppContent = () => {
@@ -30,8 +31,9 @@ const AppContent = () => {
   return (
     <div className="App">
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route
-          path="/"
+          path="/apply"
           element={
             <LoginPage
               onLogin={handleLogin}
@@ -46,7 +48,7 @@ const AppContent = () => {
           element={
             <StatementReview
               onNext={() => navigate("/personal-details")}
-              onBack={() => navigate("/")}
+              onBack={() => navigate("/apply")}
             />
           }
         />
