@@ -13,6 +13,7 @@ import { MONO_COMPLETE_MESSAGE, isMandateSuccessful } from "./monoComplete";
 import { brand, colors, radii, shadows, type } from "../theme";
 import {
   Callout,
+  Modal,
   PageShell,
   PrimaryButton,
   Receipt,
@@ -27,6 +28,24 @@ import {
   formatCurrency,
   quote,
 } from "../lending";
+import { readEligibility } from "../eligibility";
+
+/**
+ * The terms to offer: the standard list cut to the borrower's tenor range.
+ * If none of the standard terms fall inside it, every month in the range.
+ */
+const durationOptions = (minTenor?: number, maxTenor?: number): number[] => {
+  const low = minTenor ?? 0;
+  const high = maxTenor ?? Infinity;
+  const standard = LOAN_DURATIONS.map((d) => d.value).filter(
+    (m) => m >= low && m <= high,
+  );
+  if (standard.length > 0) return standard;
+  if (minTenor !== undefined && maxTenor !== undefined && maxTenor >= minTenor) {
+    return Array.from({ length: maxTenor - minTenor + 1 }, (_, i) => minTenor + i);
+  }
+  return LOAN_DURATIONS.map((d) => d.value);
+};
 
 // ============== Loan Duration Options ==============
 // ============== Format Currency ==============
@@ -35,9 +54,23 @@ const LoanApplication: React.FC = () => {
   const navigate = useNavigate();
   const [submitLoan, { isLoading }] = useSubmitLoanMutation();
 
+  // The borrower's limits from the backend; the hard-coded minimum only
+  // applies if it didn't send one.
+  const [limits] = useState(readEligibility);
+  const minLoanAmount = limits.minLoanEligible ?? MIN_LOAN_AMOUNT;
+  const durations = useMemo(
+    () => durationOptions(limits.minTenor, limits.maxTenor),
+    [limits],
+  );
+  // Resumed after step4 saved the loan but the mandate failed (?retry=1).
+  const [retrying] = useState(
+    () => new URLSearchParams(window.location.search).get("retry") === "1",
+  );
+  const [confirmBack, setConfirmBack] = useState(false);
+
   const [maxLoanAmount, setMaxLoanAmount] = useState(0);
   const [loanAmount, setLoanAmount] = useState(0);
-  const [duration, setDuration] = useState(1);
+  const [duration, setDuration] = useState(() => durations[0]);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState("");
   const [offerLetterAccepted, setOfferLetterAccepted] = useState(false);
@@ -48,16 +81,16 @@ const LoanApplication: React.FC = () => {
   const interestRate = INTEREST_RATE_MONTHLY;
 
   useEffect(() => {
-    const maxEligible = localStorage.getItem("maxLoanEligible");
-    if (maxEligible) {
-      const amount = parseFloat(maxEligible);
-      setMaxLoanAmount(amount);
-      setLoanAmount(Math.min(amount, 50000));
-      setInputValue(formatCurrency(Math.min(amount, 50000)));
+    const max = limits.maxLoanEligible;
+    if (max) {
+      const amount = Math.max(minLoanAmount, Math.min(max, 50000));
+      setMaxLoanAmount(max);
+      setLoanAmount(amount);
+      setInputValue(formatCurrency(amount));
     } else {
       navigate("/apply");
     }
-  }, [navigate]);
+  }, [navigate, limits, minLoanAmount]);
 
   // Listen for the Mono webview reaching our redirect page (`/mono/complete`).
   // That page posts Mono's redirect params from inside the iframe; only a
@@ -103,8 +136,8 @@ const LoanApplication: React.FC = () => {
       setError(`Maximum loan amount is ${formatCurrency(maxLoanAmount)}`);
       setLoanAmount(maxLoanAmount);
       setInputValue(formatCurrency(maxLoanAmount));
-    } else if (numericValue < MIN_LOAN_AMOUNT && numericValue !== 0) {
-      setError(`Minimum loan amount is ${formatCurrency(MIN_LOAN_AMOUNT)}`);
+    } else if (numericValue < minLoanAmount && numericValue !== 0) {
+      setError(`Minimum loan amount is ${formatCurrency(minLoanAmount)}`);
       setLoanAmount(numericValue);
       setInputValue(formatCurrency(numericValue));
     } else {
@@ -131,8 +164,8 @@ const LoanApplication: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (loanAmount < MIN_LOAN_AMOUNT) {
-      setError(`Minimum loan amount is ${formatCurrency(MIN_LOAN_AMOUNT)}`);
+    if (loanAmount < minLoanAmount) {
+      setError(`Minimum loan amount is ${formatCurrency(minLoanAmount)}`);
       return;
     }
 
@@ -187,16 +220,19 @@ const LoanApplication: React.FC = () => {
     }
   };
 
+  let submitLabel = retrying ? "Submit again" : "Accept and continue";
+  if (isLoading) submitLabel = "Submitting";
+
   const sliderPct =
-    maxLoanAmount > MIN_LOAN_AMOUNT
-      ? ((loanAmount - MIN_LOAN_AMOUNT) / (maxLoanAmount - MIN_LOAN_AMOUNT)) * 100
+    maxLoanAmount > minLoanAmount
+      ? ((loanAmount - minLoanAmount) / (maxLoanAmount - minLoanAmount)) * 100
       : 0;
 
   return (
     <>
       <PageShell
         step={4}
-        headerAction={{ label: "Back", onClick: () => navigate("/personal-details") }}
+        headerAction={{ label: "Back", onClick: () => setConfirmBack(true) }}
         aside={
           <Receipt
             title="Loan breakdown"
@@ -305,17 +341,24 @@ const LoanApplication: React.FC = () => {
               </div>
             </div>
 
-            {error && (
+            {error ? (
               <Callout icon={AlertCircle} tone="error">
                 {error}
               </Callout>
+            ) : (
+              retrying && (
+                <Callout icon={AlertCircle} title="Your last submission didn't go through">
+                  Check your loan below and submit it again. Nothing is sent until you
+                  press Submit again.
+                </Callout>
+              )
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <input
                 type="range"
-                min={MIN_LOAN_AMOUNT}
-                max={maxLoanAmount || MIN_LOAN_AMOUNT}
+                min={minLoanAmount}
+                max={maxLoanAmount || minLoanAmount}
                 step={1000}
                 value={loanAmount}
                 onChange={handleSliderChange}
@@ -333,7 +376,7 @@ const LoanApplication: React.FC = () => {
                   color: colors.text.secondary,
                 }}
               >
-                <span>{formatCurrency(MIN_LOAN_AMOUNT)}</span>
+                <span>{formatCurrency(minLoanAmount)}</span>
                 <span>{formatCurrency(maxLoanAmount)}</span>
               </div>
             </div>
@@ -343,13 +386,13 @@ const LoanApplication: React.FC = () => {
                 Repayment duration
               </span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                {LOAN_DURATIONS.map((option) => {
-                  const active = option.value === duration;
+                {durations.map((months) => {
+                  const active = months === duration;
                   return (
                     <button
-                      key={option.value}
+                      key={months}
                       type="button"
-                      onClick={() => setDuration(option.value)}
+                      onClick={() => setDuration(months)}
                       style={{
                         flexGrow: 1,
                         minWidth: "76px",
@@ -373,7 +416,7 @@ const LoanApplication: React.FC = () => {
                           color: colors.text.primary,
                         }}
                       >
-                        {option.value}
+                        {months}
                       </span>
                       <span
                         style={{
@@ -383,7 +426,7 @@ const LoanApplication: React.FC = () => {
                           color: active ? colors.text.primary : colors.text.muted,
                         }}
                       >
-                        {option.value === 1 ? "month" : "months"}
+                        {months === 1 ? "month" : "months"}
                       </span>
                     </button>
                   );
@@ -446,23 +489,31 @@ const LoanApplication: React.FC = () => {
             </label>
 
             <div style={{ marginTop: "auto", display: "flex", gap: "16px" }}>
-              <SecondaryButton icon={ArrowLeft} onClick={() => navigate("/personal-details")}>
+              <SecondaryButton icon={ArrowLeft} onClick={() => setConfirmBack(true)}>
                 Back
               </SecondaryButton>
               <div style={{ flexGrow: 1 }}>
                 <PrimaryButton
                   onClick={handleSubmit}
                   loading={isLoading}
-                  disabled={loanAmount < MIN_LOAN_AMOUNT || !offerLetterAccepted}
+                  disabled={loanAmount < minLoanAmount || !offerLetterAccepted}
                   icon={ArrowRight}
                 >
-                  {isLoading ? "Submitting" : "Accept and continue"}
+                  {submitLabel}
                 </PrimaryButton>
               </div>
             </div>
           </div>
         </Sheet>
       </PageShell>
+      <Modal
+        open={confirmBack}
+        title="Go back to your personal details?"
+        message="Your details are already saved. If you change and submit them again, you'll come back here to choose your loan again."
+        actionText="Go back anyway"
+        onAction={() => navigate("/personal-details")}
+        onClose={() => setConfirmBack(false)}
+      />
       {showMonoWebview && (
         <motion.div
           initial={{ opacity: 0 }}

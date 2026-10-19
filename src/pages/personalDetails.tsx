@@ -18,11 +18,13 @@ import {
   useUploadIDMutation,
 } from "../store/services/baseApi";
 import { brand, colors, controls, radii, shadows, type } from "../theme";
+import { saveEligibility } from "../eligibility";
 import {
   Callout,
   Dropzone,
   Field,
   FieldRow,
+  Modal,
   PageShell,
   PrimaryButton,
   Receipt,
@@ -1201,6 +1203,7 @@ const PersonalDetails: React.FC = () => {
   // upload — the field is hidden and left out of validation entirely.
   const isPassport = formData.identificationType === "International Passport";
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmBack, setConfirmBack] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleInputChange = (field: string, value: string) => {
@@ -1458,14 +1461,8 @@ const PersonalDetails: React.FC = () => {
       if (response.success) {
         console.log("personalResponse", response);
 
-        // Store maxLoanEligible if it exists in the response
-        if (response.data?.maxLoanEligible) {
-          localStorage.setItem(
-            "maxLoanEligible",
-            response.data.maxLoanEligible.toString(),
-          );
-          console.log("Stored maxLoanEligible:", response.data.maxLoanEligible);
-        }
+        // The loan screen's limits
+        saveEligibility(response.data ?? {});
 
         // Store monoCustomerId so step4 (loan submission) can send it
         if (response.data?.monoCustomerId) {
@@ -1500,7 +1497,7 @@ const PersonalDetails: React.FC = () => {
       step={3}
       headerAction={{
         label: "Back",
-        onClick: () => navigate("/statement-review"),
+        onClick: () => setConfirmBack(true),
       }}
       aside={
         <Receipt
@@ -1637,7 +1634,7 @@ const PersonalDetails: React.FC = () => {
           <div style={{ marginTop: "auto", display: "flex", gap: "16px" }}>
             <SecondaryButton
               icon={ArrowLeft}
-              onClick={() => navigate("/statement-review")}
+              onClick={() => setConfirmBack(true)}
             >
               Back
             </SecondaryButton>
@@ -1653,6 +1650,14 @@ const PersonalDetails: React.FC = () => {
           </div>
         </div>
       </Sheet>
+      <Modal
+        open={confirmBack}
+        title="Go back to your bank details?"
+        message="You've already verified your bank account and BVN. If you submit them again, you'll need to verify your BVN again and redo this step."
+        actionText="Go back anyway"
+        onAction={() => navigate("/statement-review")}
+        onClose={() => setConfirmBack(false)}
+      />
     </PageShell>
   );
 };
