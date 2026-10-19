@@ -25,6 +25,7 @@ import {
 import { colors, shadows, type } from "../theme";
 import { OnboardingStep } from "../types/loanApplication";
 import { SUPPORT } from "../support";
+import { saveEligibility } from "../eligibility";
 import {
   Callout,
   Field,
@@ -164,13 +165,15 @@ const styles = {
  */
 const RESUME_ROUTES: Partial<Record<OnboardingStep, string>> = {
   [OnboardingStep.EmailValidated]: "/statement-review",
+  // The BVN code was sent but not entered. The borrower re-enters their bank
+  // details and BVN, which re-checks them and sends a fresh code.
   [OnboardingStep.BvnSent]: "/statement-review",
   [OnboardingStep.BvnValidated]: "/personal-details",
   [OnboardingStep.DocumentsUploaded]: "/loan-application",
   // The loan was saved but the mandate call failed; step4 again is the only
-  // way forward, from the loan screen.
-  [OnboardingStep.LoanSubmitted]: "/loan-application",
-  [OnboardingStep.MandateGenerated]: "/loan-application",
+  // way forward, from the loan screen in its retry state.
+  [OnboardingStep.LoanSubmitted]: "/loan-application?retry=1",
+  [OnboardingStep.MandateGenerated]: "/loan-application?retry=1",
 };
 
 /** Whether a resumed application has a screen to continue on. */
@@ -178,14 +181,6 @@ const canContinue = (status: CurrentStatusData): boolean =>
   !status.isCompleted &&
   (status.currentStep === OnboardingStep.EmailSent ||
     RESUME_ROUTES[status.currentStep as OnboardingStep] !== undefined);
-
-/** The loan screen's limits; current-step sends them from step 5 onwards. */
-const ELIGIBILITY_KEYS = [
-  "maxLoanEligible",
-  "minLoanEligible",
-  "maxTenor",
-  "minTenor",
-] as const;
 
 interface ResumeModalProps {
   open: boolean;
@@ -1065,11 +1060,7 @@ const [lastName, setLastName] = useState<string>("");
         const status = response.data;
         setResumeStatus(status);
         localStorage.setItem("loanId", status.loanId);
-        ELIGIBILITY_KEYS.forEach((key) => {
-          const value = status[key];
-          if (value === undefined || value === null) localStorage.removeItem(key);
-          else localStorage.setItem(key, String(value));
-        });
+        saveEligibility(status);
         resetResumeCode();
         setShowResumeModal(true);
         setShowResumeForm(false);
@@ -1193,7 +1184,8 @@ const [lastName, setLastName] = useState<string>("");
       setLoadingState(false);
       const errData = (error as { data?: { message?: string } })?.data;
       const errMsg = errData?.message ?? "";
-      if (errMsg.toLowerCase().includes("active application")) {
+      // 409: this email already has an unfinished application.
+      if ((error as { status?: number })?.status === 409) {
         setActiveAppModal({ open: true, message: errMsg });
       } else {
         setResendOTP(true);
