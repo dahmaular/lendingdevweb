@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -19,10 +19,14 @@ import {
   useVerifyOtpMutation,
   useVerifyResendEmailOtpMutation,
   useGetCurrentStatusMutation,
+  useRequestResumeOtpMutation,
   CurrentStatusData,
 } from "../store/services/baseApi";
 import { colors, shadows, type } from "../theme";
+import { OnboardingStep } from "../types/loanApplication";
+import { SUPPORT } from "../support";
 import {
+  Callout,
   Field,
   FieldRow,
   Modal,
@@ -153,6 +157,36 @@ const styles = {
 };
 
 // Resume Application Modal
+/**
+ * Where a resumed borrower goes for each `currentStep` (the last thing they
+ * finished). EmailSent stays on this page; MandateActivationPending is Remita
+ * only, and MandateActivated is done — neither has a screen to continue on.
+ */
+const RESUME_ROUTES: Partial<Record<OnboardingStep, string>> = {
+  [OnboardingStep.EmailValidated]: "/statement-review",
+  [OnboardingStep.BvnSent]: "/statement-review",
+  [OnboardingStep.BvnValidated]: "/personal-details",
+  [OnboardingStep.DocumentsUploaded]: "/loan-application",
+  // The loan was saved but the mandate call failed; step4 again is the only
+  // way forward, from the loan screen.
+  [OnboardingStep.LoanSubmitted]: "/loan-application",
+  [OnboardingStep.MandateGenerated]: "/loan-application",
+};
+
+/** Whether a resumed application has a screen to continue on. */
+const canContinue = (status: CurrentStatusData): boolean =>
+  !status.isCompleted &&
+  (status.currentStep === OnboardingStep.EmailSent ||
+    RESUME_ROUTES[status.currentStep as OnboardingStep] !== undefined);
+
+/** The loan screen's limits; current-step sends them from step 5 onwards. */
+const ELIGIBILITY_KEYS = [
+  "maxLoanEligible",
+  "minLoanEligible",
+  "maxTenor",
+  "minTenor",
+] as const;
+
 interface ResumeModalProps {
   open: boolean;
   statusData: CurrentStatusData | null;
@@ -169,6 +203,16 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
   onClose,
 }) => {
   if (!open || !statusData) return null;
+
+  const continuable = canContinue(statusData);
+  const retrying =
+    statusData.currentStep === OnboardingStep.LoanSubmitted ||
+    statusData.currentStep === OnboardingStep.MandateGenerated;
+  // The backend reports 100% before the borrower is done, so only
+  // isCompleted may show a full bar.
+  const progress = statusData.isCompleted
+    ? 100
+    : Math.min(statusData.progressPercentage, 99);
 
   return (
     <AnimatePresence>
@@ -253,7 +297,11 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 marginBottom: "8px",
               }}
             >
-              Welcome back, {statusData.firstName}! 👋
+              {continuable
+                ? `Welcome back, ${statusData.firstName}! 👋`
+                : statusData.isCompleted
+                ? "Your application is complete"
+                : "We need to help you finish this one"}
             </h3>
             <p
               style={{
@@ -263,9 +311,22 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 marginBottom: "24px",
               }}
             >
-              You have an ongoing application for{" "}
-              <strong>{statusData.productName}</strong>. Would you like to
-              continue where you left off?
+              {continuable ? (
+                <>
+                  You have an ongoing application for{" "}
+                  <strong>{statusData.productName}</strong>. Would you like to
+                  continue where you left off?
+                </>
+              ) : (
+                <>
+                  Your application for <strong>{statusData.productName}</strong>{" "}
+                  {statusData.isCompleted
+                    ? "has been submitted."
+                    : "can’t be continued here."}{" "}
+                  If you didn&rsquo;t finish authorising the direct debit with your bank,
+                  contact us at <strong>{SUPPORT.email}</strong>.
+                </>
+              )}
             </p>
 
             {/* Progress Info */}
@@ -302,7 +363,7 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                       color: colors.primary[600],
                     }}
                   >
-                    {statusData.progressPercentage.toFixed(0)}%
+                    {progress.toFixed(0)}%
                   </span>
                 </div>
                 <div
@@ -315,7 +376,7 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
                 >
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${statusData.progressPercentage}%` }}
+                    animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     style={{
                       height: "100%",
@@ -378,7 +439,37 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
               </div>
 
               {/* Next Step Preview */}
-              {statusData.nextStepName && (
+              {retrying ? (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    background: colors.primary[50],
+                    borderRadius: "12px",
+                    borderLeft: `3px solid ${colors.primary[500]}`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: colors.primary[700],
+                      margin: 0,
+                    }}
+                  >
+                    Next: Submit your loan again
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: colors.primary[600],
+                      margin: "4px 0 0",
+                    }}
+                  >
+                    Your last submission didn&rsquo;t go through. Review your loan and submit it again.
+                  </p>
+                </div>
+              ) : continuable && statusData.nextStepName && (
                 <div
                   style={{
                     marginTop: "12px",
@@ -415,16 +506,18 @@ const ResumeApplicationModal: React.FC<ResumeModalProps> = ({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              <button
-                onClick={onContinue}
-                style={{
-                  ...styles.button,
-                  width: "100%",
-                }}
-              >
-                Continue Application
-                <ArrowRight size={18} />
-              </button>
+              {continuable && (
+                <button
+                  onClick={onContinue}
+                  style={{
+                    ...styles.button,
+                    width: "100%",
+                  }}
+                >
+                  Continue Application
+                  <ArrowRight size={18} />
+                </button>
+              )}
               <button
                 onClick={onStartNew}
                 style={{
@@ -810,6 +903,25 @@ const toLocalPhone = (phone: string): string | null => {
   return national ? `0${national[1]}` : null;
 };
 
+/**
+ * Resume codes, per the backend's OtpService: a code lives 10 minutes, and
+ * requests are capped at 3 per email per 5 minutes — so roughly one every 100
+ * seconds.
+ */
+const RESUME_CODE_TTL_MS = 10 * 60 * 1000;
+const RESUME_RESEND_COOLDOWN_MS = 100 * 1000;
+
+/** Messages after which the code can no longer be used: locked, expired, spent. */
+const DEAD_CODE_MESSAGE = /locked|too many failed|expired/i;
+
+const formatCountdown = (ms: number): string => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${`${total % 60}`.padStart(2, "0")}`;
+};
+
+const errorMessage = (error: unknown): string | undefined =>
+  (error as { data?: { message?: string } })?.data?.message;
+
 const toDateInputValue = (date: Date): string => {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
@@ -845,6 +957,11 @@ const [lastName, setLastName] = useState<string>("");
     () => new URLSearchParams(window.location.search).get("resume") === "1"
   );
   const [resumeEmail, setResumeEmail] = useState<string>("");
+  const [resumeOtp, setResumeOtp] = useState<string>("");
+  // When the latest resume code was requested; null until one has been.
+  const [resumeCodeSentAt, setResumeCodeSentAt] = useState<number | null>(null);
+  const [resumeError, setResumeError] = useState<string>("");
+  const [now, setNow] = useState<number>(() => Date.now());
   const [resumeStatus, setResumeStatus] = useState<CurrentStatusData | null>(
     null,
   );
@@ -867,34 +984,37 @@ const [lastName, setLastName] = useState<string>("");
     useVerifyResendEmailOtpMutation();
   const [getCurrentStatus, { isLoading: statusLoading }] =
     useGetCurrentStatusMutation();
+  const [requestResumeOtp, { isLoading: resumeOtpLoading }] =
+    useRequestResumeOtpMutation();
 
-  // Check for existing application on mount
-  // useEffect(() => {
-  //   const checkExistingApplication = async (storedLoanId: string) => {
-  //     try {
-  //       const response = await getCurrentStatus({
-  //         email: storedLoanId,
-  //       }).unwrap();
-  //       if (response.success && response.data && !response.data.isCompleted) {
-  //         setResumeStatus(response.data);
-  //         setShowResumeModal(true);
-  //       }
-  //     } catch (error) {
-  //       // No existing application found or error, continue with fresh start
-  //       console.log("No existing application to resume");
-  //     }
-  //   };
+  // Tick once a second while a resume code is out, for its countdown and the
+  // resend cooldown.
+  useEffect(() => {
+    if (resumeCodeSentAt === null) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [resumeCodeSentAt]);
 
-  //   const storedLoanId = localStorage.getItem("loanId");
-  //   if (storedLoanId) {
-  //     checkExistingApplication(storedLoanId);
-  //   }
-  // }, [getCurrentStatus]);
+  const resumeCodeSent = resumeCodeSentAt !== null;
+  const resumeCodeLeft = resumeCodeSent
+    ? resumeCodeSentAt + RESUME_CODE_TTL_MS - now
+    : 0;
+  const resendWait = resumeCodeSent
+    ? resumeCodeSentAt + RESUME_RESEND_COOLDOWN_MS - now
+    : 0;
 
-  const handleResumeApplication = async () => {
+  const resetResumeCode = () => {
+    setResumeCodeSentAt(null);
+    setResumeOtp("");
+    setResumeError("");
+  };
+
+  // Resume step 1. The reply is the same whether or not an application
+  // exists, so the screen never says which.
+  const requestResumeCode = async (targetEmail: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!resumeEmail) {
+    if (!targetEmail) {
       setModal({
         open: true,
         message: "Please enter your email address to resume your application.",
@@ -903,7 +1023,7 @@ const [lastName, setLastName] = useState<string>("");
       return;
     }
 
-    if (!emailRegex.test(resumeEmail)) {
+    if (!emailRegex.test(targetEmail)) {
       setModal({
         open: true,
         message: "Please enter a valid email address.",
@@ -912,72 +1032,72 @@ const [lastName, setLastName] = useState<string>("");
       return;
     }
 
+    setResumeError("");
     try {
-      const response = await getCurrentStatus({ email: resumeEmail }).unwrap();
-      console.log("Resume application response:", response);
+      await requestResumeOtp({ email: targetEmail }).unwrap();
+      setResumeOtp("");
+      setResumeCodeSentAt(Date.now());
+      setNow(Date.now());
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      setResumeError(
+        status === 400
+          ? "Enter a valid email address."
+          : errorMessage(error) || "Something went wrong. Please try again.",
+      );
+    }
+  };
+
+  // Resume step 2: the code unlocks the application's current step.
+  const handleResumeApplication = async () => {
+    if (resumeOtp.length !== 6) {
+      setResumeError("Enter the 6-digit code from your email.");
+      return;
+    }
+
+    setResumeError("");
+    try {
+      const response = await getCurrentStatus({
+        email: resumeEmail,
+        otp: resumeOtp,
+      }).unwrap();
       if (response.success && response.data) {
-        console.log("Current step:", response.data.currentStep);
-        console.log("Step number:", response.data.stepNumber);
-        setResumeStatus(response.data);
-        localStorage.setItem("loanId", response.data.loanId);
+        const status = response.data;
+        setResumeStatus(status);
+        localStorage.setItem("loanId", status.loanId);
+        ELIGIBILITY_KEYS.forEach((key) => {
+          const value = status[key];
+          if (value === undefined || value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, String(value));
+        });
+        resetResumeCode();
         setShowResumeModal(true);
         setShowResumeForm(false);
       } else {
-        setModal({
-          open: true,
-          message:
-            "No application found with this email. Please start a new application.",
-          title: "Application Not Found",
-        });
+        setResumeError(
+          response.message || "Something went wrong. Please try again.",
+        );
       }
     } catch (error) {
-      console.log("Error fetching application status:", error);
-      setModal({
-        open: true,
-        message:
-          "Unable to find your application. Please try again or start a new application.",
-        title: "Error",
-      });
+      const message =
+        errorMessage(error) || "Something went wrong. Please try again.";
+      setResumeError(message);
+      // A locked, expired or spent code can't be retried — clear it so the
+      // next step is plainly "Resend code".
+      if (DEAD_CODE_MESSAGE.test(message)) setResumeOtp("");
     }
   };
 
-  const handleProceedWithActiveApp = async () => {
-    try {
-      const response = await getCurrentStatus({ email }).unwrap();
-      if (response.success && response.data) {
-        setResumeStatus(response.data);
-        localStorage.setItem("loanId", response.data.loanId);
-        setActiveAppModal({ open: false, message: "" });
-        setShowResumeModal(true);
-      } else {
-        setActiveAppModal({ open: false, message: "" });
-        setModal({
-          open: true,
-          message: "Unable to retrieve your application. Please try again.",
-          title: "Error",
-        });
-      }
-    } catch {
-      setActiveAppModal({ open: false, message: "" });
-      setModal({
-        open: true,
-        message: "Unable to retrieve your application. Please try again.",
-        title: "Error",
-      });
-    }
+  // Starting over with an email that already has an application: send a
+  // resume code to that email instead of looking the application up directly.
+  const handleProceedWithActiveApp = () => {
+    setActiveAppModal({ open: false, message: "" });
+    setResumeEmail(email);
+    resetResumeCode();
+    setShowResumeForm(true);
+    requestResumeCode(email);
   };
 
-  const navigateToStep = (stepNumber: number) => {
-    const stepRoutes: { [key: number]: string } = {
-      1: "/apply",
-      2: "/statement-review",
-      3: "/personal-details",
-      4: "/loan-application",
-      5: "/personal-details",
-      6: "/confirmation",
-    };
-    window.location.href = stepRoutes[stepNumber] || "/apply";
-  };
 
   const isAnyLoading =
     isLoading ||
@@ -1185,13 +1305,25 @@ const [lastName, setLastName] = useState<string>("");
             title={showResumeForm ? "Pick up where you left off" : "Let's get you started"}
             subtitle={
               showResumeForm
-                ? "Enter the email you applied with and we'll find your application."
+                ? resumeCodeSent
+                  ? "Enter the code we emailed you to continue your application."
+                  : "Enter the email you applied with and we'll send you a code to continue."
                 : "Five short steps. We check your bank account, confirm who you are, and show you exactly what you'd repay before you commit to anything."
             }
           />
 
           <form
-            onSubmit={isOTP ? handleOTPSubmit : handleSubmit}
+            onSubmit={
+              showResumeForm
+                ? (e) => {
+                    e.preventDefault();
+                    if (resumeCodeSent) handleResumeApplication();
+                    else requestResumeCode(resumeEmail);
+                  }
+                : isOTP
+                ? handleOTPSubmit
+                : handleSubmit
+            }
             style={{ display: "flex", flexDirection: "column", gap: "22px", flexGrow: 1 }}
           >
             {showResumeForm ? (
@@ -1206,26 +1338,86 @@ const [lastName, setLastName] = useState<string>("");
                   onChange={setResumeEmail}
                   icon={Mail}
                   maxLength={EMAIL_MAX_LENGTH}
-                  hint="We'll look up the application filed under this address."
+                  disabled={resumeCodeSent}
+                  hint={
+                    resumeCodeSent
+                      ? "To use a different email, go back."
+                      : "We'll email a code to this address."
+                  }
+                  error={resumeCodeSent ? undefined : resumeError || undefined}
                 />
+
+                {resumeCodeSent && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                    style={{ overflow: "hidden", display: "flex", flexDirection: "column", gap: "22px" }}
+                  >
+                    <Callout icon={Mail}>
+                      If an application exists for this email, we&rsquo;ve sent a code.
+                    </Callout>
+                    <OtpInput
+                      label="Enter the code we emailed you"
+                      value={resumeOtp}
+                      onChange={(v) => {
+                        setResumeOtp(v);
+                        if (resumeError) setResumeError("");
+                      }}
+                      error={resumeError || undefined}
+                      hint={
+                        resumeCodeLeft > 0
+                          ? `The code expires in ${formatCountdown(resumeCodeLeft)}.`
+                          : "This code has expired. Request a new one."
+                      }
+                      action={{
+                        label: resumeOtpLoading
+                          ? "Sending..."
+                          : resendWait > 0
+                          ? `Resend in ${formatCountdown(resendWait)}`
+                          : "Resend code",
+                        onClick: () => requestResumeCode(resumeEmail),
+                        disabled: resumeOtpLoading || resendWait > 0,
+                      }}
+                    />
+                  </motion.div>
+                )}
+
                 <div style={{ display: "flex", gap: "16px", marginTop: "auto" }}>
                   <SecondaryButton
                     icon={ArrowLeft}
                     onClick={() => {
+                      // Back from the code steps to the email; back from the
+                      // email leaves the resume form.
+                      if (resumeCodeSent) {
+                        resetResumeCode();
+                        return;
+                      }
                       setShowResumeForm(false);
                       setResumeEmail("");
+                      setResumeError("");
                     }}
                   >
                     Back
                   </SecondaryButton>
                   <div style={{ flexGrow: 1 }}>
-                    <PrimaryButton
-                      onClick={handleResumeApplication}
-                      loading={statusLoading}
-                      disabled={!resumeEmail}
-                    >
-                      {statusLoading ? "Finding your application" : "Resume"}
-                    </PrimaryButton>
+                    {resumeCodeSent ? (
+                      <PrimaryButton
+                        submit
+                        loading={statusLoading}
+                        disabled={resumeOtp.length !== 6}
+                      >
+                        {statusLoading ? "Finding your application" : "Resume"}
+                      </PrimaryButton>
+                    ) : (
+                      <PrimaryButton
+                        submit
+                        loading={resumeOtpLoading}
+                        disabled={!resumeEmail}
+                      >
+                        {resumeOtpLoading ? "Sending code" : "Send code"}
+                      </PrimaryButton>
+                    )}
                   </div>
                 </div>
               </>
@@ -1379,19 +1571,15 @@ const [lastName, setLastName] = useState<string>("");
         open={showResumeModal}
         statusData={resumeStatus}
         onContinue={() => {
-          if (resumeStatus) {
-            console.log("currentStep value:", resumeStatus.currentStep);
-            console.log("stepNumber value:", resumeStatus.stepNumber);
+          if (resumeStatus && canContinue(resumeStatus)) {
+            const step = resumeStatus.currentStep as OnboardingStep;
 
-            // Navigate to currentStep (the step user needs to complete)
-            const stepToNavigate = resumeStatus.currentStep;
-            console.log("Navigating to step:", stepToNavigate);
-
-            // Step 1 is this same page, so stay put, pre-fill the
-            // fields with the resumed application's data, and drop the
-            // user straight into the OTP screen so they can resend and
-            // verify instead of resubmitting the whole form.
-            if (stepToNavigate === 1) {
+            // The email code was sent but never verified. That screen is
+            // this page, so stay put, pre-fill the fields with the resumed
+            // application's data, and drop the user straight into the OTP
+            // screen so they can resend and verify instead of resubmitting
+            // the whole form.
+            if (step === OnboardingStep.EmailSent) {
               setEmail(resumeStatus.email || "");
               setFirstName(resumeStatus.firstName || "");
               setLastName(resumeStatus.lastName || "");
@@ -1403,17 +1591,7 @@ const [lastName, setLastName] = useState<string>("");
               return;
             }
 
-            // If navigating to step 4 (loan application), ensure maxLoanEligible is set
-            if (
-              stepToNavigate === 4 &&
-              !localStorage.getItem("maxLoanEligible")
-            ) {
-              // Set a default high value if not available from API
-              localStorage.setItem("maxLoanEligible", "1000000");
-              console.log("Set default maxLoanEligible for step 4");
-            }
-
-            navigateToStep(stepToNavigate);
+            window.location.href = RESUME_ROUTES[step] || "/apply";
           }
         }}
         onStartNew={() => {
@@ -1494,14 +1672,14 @@ const [lastName, setLastName] = useState<string>("");
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <button
                   onClick={handleProceedWithActiveApp}
-                  disabled={statusLoading}
+                  disabled={resumeOtpLoading}
                   style={{
                     ...styles.button,
-                    opacity: statusLoading ? 0.7 : 1,
-                    cursor: statusLoading ? "not-allowed" : "pointer",
+                    opacity: resumeOtpLoading ? 0.7 : 1,
+                    cursor: resumeOtpLoading ? "not-allowed" : "pointer",
                   }}
                 >
-                  {statusLoading ? (
+                  {resumeOtpLoading ? (
                     <>
                       <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
                       Loading...

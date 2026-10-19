@@ -77,3 +77,22 @@ export interface SubmitLoanResponse {
     monoUrl: string;
   };
 }
+
+/**
+ * The backend's BorrowerOnboardingStep, sent as `currentStep`. Each value is
+ * the last thing the borrower finished, not the screen to show next — see
+ * DevPayAPI docs/borrower-onboarding-current-step.md.
+ */
+export enum OnboardingStep {
+  EmailSent = 1,
+  EmailValidated = 2,
+  BvnSent = 3,
+  BvnValidated = 4,
+  DocumentsUploaded = 5,
+  /** 6 and 7 mean step4 saved the loan but the mandate call failed. */
+  LoanSubmitted = 6,
+  MandateGenerated = 7,
+  /** Remita only; this app runs on Mono, so it should never be seen. */
+  MandateActivationPending = 8,
+  MandateActivated = 9,
+}
