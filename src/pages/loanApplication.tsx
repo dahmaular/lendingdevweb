@@ -6,11 +6,12 @@ import {
   ArrowRight,
   ArrowLeft,
   AlertCircle,
+  ChevronDown,
   X,
 } from "lucide-react";
 import { useSubmitLoanMutation } from "../store/services/baseApi";
 import { MONO_COMPLETE_MESSAGE, isMandateSuccessful } from "./monoComplete";
-import { brand, colors, radii, shadows, type } from "../theme";
+import { brand, colors, controls, radii, shadows, type } from "../theme";
 import {
   Callout,
   Modal,
@@ -31,20 +32,19 @@ import {
 import { readEligibility } from "../eligibility";
 
 /**
- * The terms to offer: the standard list cut to the borrower's tenor range.
- * If none of the standard terms fall inside it, every month in the range.
+ * The terms to offer: the standard 3–18 month list cut to the borrower's
+ * tenor range. If the borrower's range falls entirely outside the standard
+ * list, every month in their range.
  */
 const durationOptions = (minTenor?: number, maxTenor?: number): number[] => {
   const low = minTenor ?? 0;
   const high = maxTenor ?? Infinity;
-  const standard = LOAN_DURATIONS.map((d) => d.value).filter(
-    (m) => m >= low && m <= high,
-  );
+  const standard = LOAN_DURATIONS.filter((m) => m >= low && m <= high);
   if (standard.length > 0) return standard;
   if (minTenor !== undefined && maxTenor !== undefined && maxTenor >= minTenor) {
     return Array.from({ length: maxTenor - minTenor + 1 }, (_, i) => minTenor + i);
   }
-  return LOAN_DURATIONS.map((d) => d.value);
+  return LOAN_DURATIONS;
 };
 
 // ============== Loan Duration Options ==============
@@ -71,6 +71,7 @@ const LoanApplication: React.FC = () => {
   const [maxLoanAmount, setMaxLoanAmount] = useState(0);
   const [loanAmount, setLoanAmount] = useState(0);
   const [duration, setDuration] = useState(() => durations[0]);
+  const [durationFocused, setDurationFocused] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState("");
   const [offerLetterAccepted, setOfferLetterAccepted] = useState(false);
@@ -382,55 +383,59 @@ const LoanApplication: React.FC = () => {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <span style={{ font: `600 14px/1 ${type.body}`, color: colors.text.primary }}>
+              <label
+                htmlFor="repaymentDuration"
+                style={{ font: `600 14px/1 ${type.body}`, color: colors.text.primary }}
+              >
                 Repayment duration
-              </span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                {durations.map((months) => {
-                  const active = months === duration;
-                  return (
-                    <button
-                      key={months}
-                      type="button"
-                      onClick={() => setDuration(months)}
-                      style={{
-                        flexGrow: 1,
-                        minWidth: "76px",
-                        height: "64px",
-                        borderRadius: `${radii.lg - 2}px`,
-                        border: active
-                          ? `2px solid ${colors.primary.main}`
-                          : `1px solid ${colors.border.light}`,
-                        background: active ? brand.gold : "#FFFFFF",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "2px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <span
-                        style={{
-                          font: `700 20px/1 ${type.display}`,
-                          color: colors.text.primary,
-                        }}
-                      >
-                        {months}
-                      </span>
-                      <span
-                        style={{
-                          font: `500 11px/1 ${type.body}`,
-                          letterSpacing: "0.05em",
-                          textTransform: "uppercase",
-                          color: active ? colors.text.primary : colors.text.muted,
-                        }}
-                      >
-                        {months === 1 ? "month" : "months"}
-                      </span>
-                    </button>
-                  );
-                })}
+              </label>
+              <div style={{ position: "relative" }}>
+                <select
+                  id="repaymentDuration"
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  onFocus={() => setDurationFocused(true)}
+                  onBlur={() => setDurationFocused(false)}
+                  style={{
+                    width: "100%",
+                    height: `${controls.fieldHeight}px`,
+                    padding: "0 48px 0 18px",
+                    background: "#FFFFFF",
+                    border: durationFocused
+                      ? `2px solid ${colors.primary.main}`
+                      : `1px solid ${colors.border.light}`,
+                    borderRadius: `${radii.md}px`,
+                    boxShadow: durationFocused
+                      ? "0 0 0 4px rgba(230, 190, 88, 0.35)"
+                      : "none",
+                    transition: "border-color 120ms ease, box-shadow 120ms ease",
+                    font: `400 16px/1 ${type.body}`,
+                    color: colors.text.primary,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                >
+                  {durations.map((months) => (
+                    <option key={months} value={months}>
+                      {months} {months === 1 ? "month" : "months"}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={19}
+                  strokeWidth={1.8}
+                  color={colors.text.muted}
+                  style={{
+                    position: "absolute",
+                    right: "18px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    pointerEvents: "none",
+                  }}
+                />
               </div>
             </div>
 

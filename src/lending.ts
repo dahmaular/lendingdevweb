@@ -19,14 +19,15 @@ export const PROCESSING_FEE_RATE = 0.01;
 /** The slider floor, and what the amount validator rejects below. */
 export const MIN_LOAN_AMOUNT = 5000;
 
-/** Selectable terms, in months. */
-export const LOAN_DURATIONS = [
-  { value: 1, label: "1 Month" },
-  { value: 2, label: "2 Months" },
-  { value: 3, label: "3 Months" },
-  { value: 6, label: "6 Months" },
-  { value: 12, label: "12 Months" },
-];
+/** Default tenor bounds, used when the backend doesn't send a range. */
+export const MIN_TENOR_MONTHS = 3;
+export const MAX_TENOR_MONTHS = 18;
+
+/** Selectable terms: every month from MIN_TENOR_MONTHS to MAX_TENOR_MONTHS. */
+export const LOAN_DURATIONS: number[] = Array.from(
+  { length: MAX_TENOR_MONTHS - MIN_TENOR_MONTHS + 1 },
+  (_, i) => MIN_TENOR_MONTHS + i,
+);
 
 export interface LoanQuote {
   principal: number;
