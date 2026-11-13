@@ -5,6 +5,7 @@ import {
 } from "@reduxjs/toolkit/query/react";
 import {
   LoanApplication,
+  LoanStatusResponse,
   OnboardingRequest,
   OnboardingResponse,
   SalaryHistoryReviewRequest,
@@ -85,6 +86,11 @@ export interface CurrentStatusData {
   companyName: string;
   productName: string;
   requiredActions: string[];
+  /**
+   * 15-minute JWT bound to the verified email. Required by GET loan/status;
+   * valid nowhere else. Absent on backends older than 13 Nov 2026.
+   */
+  statusToken?: string;
 }
 
 export interface CurrentStatusResponse {
@@ -303,6 +309,21 @@ export const baseApi = createApi({
         body,
       }),
     }),
+    // The life of the loan itself — terms, repayment progress, what's left.
+    // Looked up by the borrower's email, authorized by the statusToken that
+    // current-step mints once that email passes the OTP check. 401 means the
+    // token expired (15 minutes) — the fix is to re-run the OTP flow.
+    getLoanStatus: builder.query<
+      LoanStatusResponse,
+      { email: string; statusToken: string }
+    >({
+      query: ({ email, statusToken }) => ({
+        url: "/loan/status",
+        method: "GET",
+        params: { email },
+        headers: { Authorization: `Bearer ${statusToken}` },
+      }),
+    }),
     getBanks: builder.query<{ code: string; name: string }[], void>({
       query: () => ({ url: "/Mono/banks", method: "GET" }),
       transformResponse: (response: unknown) => {
@@ -359,4 +380,5 @@ export const {
   useUploadIDMutation,
   useUploadSignedOfferLetterMutation,
   useGetBanksQuery,
+  useLazyGetLoanStatusQuery,
 } = baseApi;

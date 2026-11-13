@@ -96,3 +96,76 @@ export enum OnboardingStep {
   MandateActivationPending = 8,
   MandateActivated = 9,
 }
+
+// ----- GET loan/{id}/status — the life of the loan itself -----
+
+/** The backend's LoanStatus, sent as `status`. */
+export enum LoanStatus {
+  Pending = 0,
+  NotBooked = 1,
+  Approved = 2,
+  Rejected = 3,
+  Disbursed = 4,
+  Repaid = 5,
+  Overdue = 6,
+  Cancelled = 7,
+  OfferLettered = 9,
+}
+
+export enum RepaymentStatus {
+  Active = 0,
+  Overdue = 1,
+  Completed = 2,
+}
+
+export interface LoanStatusData {
+  loanId: string;
+  borrowerName: string;
+  status: LoanStatus;
+  /** e.g. "Disbursed" — the backend's own wording, shown as-is. */
+  statusDisplay: string;
+
+  // Terms (₦ amounts as decimals)
+  /** Principal applied for. */
+  amount: number;
+  tenorInMonths: number;
+  /** Product rate, percent. */
+  interestRate: number;
+  appliedInterest?: number;
+  /** Deducted before payout. */
+  applicableFees?: number;
+  /** What actually lands in the account. */
+  disbursementAmount?: number;
+  monthlyRepayment?: number;
+  totalRepayment?: number;
+
+  // Repayment progress
+  /** 0 until the first collection. */
+  amountPaid: number;
+  /** What is still scheduled to be collected. */
+  amountPending: number;
+  lastPaymentAt?: string;
+  /** Absent until repayment starts. */
+  repaymentStatus?: RepaymentStatus;
+  repaymentStatusDisplay?: string;
+
+  // Lifecycle (ISO 8601 UTC)
+  appliedAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  disbursementDate?: string;
+  dueDate?: string;
+
+  productId: string;
+  productName: string;
+  isMandateCreated: boolean;
+}
+
+export interface LoanStatusResponse {
+  success: boolean;
+  message: string;
+  /** Only on failures. */
+  code?: string;
+  /** Absent on failures. */
+  data?: LoanStatusData;
+}
