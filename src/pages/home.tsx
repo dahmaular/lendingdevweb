@@ -14,7 +14,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { brand, colors, controls, radii, shadows, type } from "../theme";
-import { AppHeader, HelpLink, PrimaryButton, STEPS } from "../components/chrome";
+import { AppHeader, HelpLink, PrimaryButton, SecondaryButton, STEPS } from "../components/chrome";
 import { useIsNarrow, useMediaQuery } from "../components/chrome/useMediaQuery";
 import { MIN_LOAN_AMOUNT, formatCurrency } from "../lending";
 import { COMPANY, SUPPORT, isPlaceholder, telHref } from "../support";
@@ -481,10 +481,13 @@ const Home: React.FC = () => {
             ))}
           </div>
 
-          <div style={{ display: "flex" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "14px" }}>
             <PrimaryButton fullWidth={narrow} icon={ArrowRight} onClick={apply}>
               Start your application
             </PrimaryButton>
+            <SecondaryButton fullWidth={narrow} onClick={() => navigate("/status")}>
+              Check loan status
+            </SecondaryButton>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -852,6 +855,7 @@ const Home: React.FC = () => {
                 <a href="/apply" style={footerLink}>Apply now</a>
                 <a href="#how-it-works" style={footerLink}>How it works</a>
                 <a href="/apply?resume=1" style={footerLink}>Resume application</a>
+                <a href="/status" style={footerLink}>Check loan status</a>
               </nav>
 
               <div style={footerColumn}>
