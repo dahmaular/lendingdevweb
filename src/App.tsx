@@ -13,6 +13,7 @@ import LoanApplicationPage from "./pages/loanApplication";
 import PersonalDetails from "./pages/personalDetails";
 import UploadOfferLetter from "./pages/uploadOfferLetter";
 import MonoComplete from "./pages/monoComplete";
+import LoanStatus from "./pages/loanStatus";
 import Home from "./pages/home";
 
 // Wrapper component to use hooks
@@ -57,6 +58,7 @@ const AppContent = () => {
         <Route path="/confirmation" element={<ConfirmationPage />} />
         <Route path="/upload-offer-letter" element={<UploadOfferLetter />} />
         <Route path="/mono/complete" element={<MonoComplete />} />
+        <Route path="/status" element={<LoanStatus />} />
       </Routes>
     </div>
   );
