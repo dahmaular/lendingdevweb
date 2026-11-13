@@ -83,13 +83,19 @@ const ProgressBar: React.FC<{ fraction: number }> = ({ fraction }) => (
   </div>
 );
 
-/** One milestone row: done gets a filled check, pending a hollow circle. */
-const Milestone: React.FC<{ label: string; at?: string; last?: boolean }> = ({
-  label,
-  at,
-  last,
-}) => {
-  const done = !!at;
+/**
+ * One milestone row: done gets a filled check, pending a hollow circle.
+ * `done` can be true without a timestamp — the backend doesn't stamp every
+ * step on every application (e.g. bankVerifiedAt can be null on an
+ * application whose loan is already submitted), but the steps are strictly
+ * ordered, so completing a later one proves the earlier ones happened.
+ */
+const Milestone: React.FC<{
+  label: string;
+  at?: string;
+  done?: boolean;
+  last?: boolean;
+}> = ({ label, at, done = !!at, last }) => {
   const when = formatDate(at);
   return (
     <div style={{ display: "flex", gap: "14px" }}>
@@ -122,7 +128,7 @@ const Milestone: React.FC<{ label: string; at?: string; last?: boolean }> = ({
           {label}
         </span>
         <span style={{ font: `400 12px/1.3 ${type.body}`, color: colors.text.secondary }}>
-          {when ?? "Not yet"}
+          {when ?? (done ? "Done" : "Not yet")}
         </span>
       </div>
     </div>
@@ -497,12 +503,33 @@ const LoanStatus: React.FC = () => {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <Milestone label="Application started" at={status.createdAt} />
-              <Milestone label="Email verified" at={status.emailVerifiedAt} />
-              <Milestone label="BVN verified" at={status.bvnVerifiedAt} />
-              <Milestone label="Bank account connected" at={status.bankVerifiedAt} />
-              <Milestone label="Documents uploaded" at={status.documentsUploadedAt} />
-              <Milestone label="Loan submitted" at={status.loanSubmittedAt} last />
+              {(() => {
+                // Ordered pipeline: a step with no timestamp still counts as
+                // done when any later step has one (or the application is
+                // complete) — the backend doesn't stamp every step on every
+                // application, but none of them can be skipped.
+                const steps = [
+                  { label: "Application started", at: status.createdAt },
+                  { label: "Email verified", at: status.emailVerifiedAt },
+                  { label: "BVN verified", at: status.bvnVerifiedAt },
+                  { label: "Bank account connected", at: status.bankVerifiedAt },
+                  { label: "Documents uploaded", at: status.documentsUploadedAt },
+                  { label: "Loan submitted", at: status.loanSubmittedAt },
+                ];
+                return steps.map((step, i) => (
+                  <Milestone
+                    key={step.label}
+                    label={step.label}
+                    at={step.at}
+                    done={
+                      !!step.at ||
+                      status.isCompleted ||
+                      steps.slice(i + 1).some((later) => !!later.at)
+                    }
+                    last={i === steps.length - 1}
+                  />
+                ));
+              })()}
             </div>
 
             {!status.isCompleted && (
