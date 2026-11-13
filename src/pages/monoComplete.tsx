@@ -8,13 +8,16 @@ import { brand, colors, radii, shadows, type } from "../theme";
 export const MONO_COMPLETE_MESSAGE = "mono-mandate-complete";
 
 /**
- * Mono appends `status=successful` or `status=failed` (with a `reason` such as
- * `widget_closed`) to the redirect URL. Anything but "successful" — including
- * a missing status — is treated as not authorised.
+ * Mono appends a status to the redirect URL — observed live as
+ * `status=success&reason=mandate_success`, though their docs also use
+ * `successful`, so both spellings are accepted. Anything else — including a
+ * missing status — is treated as not authorised.
  */
-export const isMandateSuccessful = (status: unknown): boolean =>
-  typeof status === "string" &&
-  status.replace(/^"|"$/g, "").toLowerCase() === "successful";
+export const isMandateSuccessful = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  const s = status.replace(/^"|"$/g, "").toLowerCase();
+  return s === "success" || s === "successful";
+};
 
 /**
  * Landing page used as Mono's `redirect_url`. Mono navigates the mandate
